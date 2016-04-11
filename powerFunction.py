@@ -205,7 +205,7 @@ def powerOn(switch, db, cli_pon=False):
     else:
         Switch.setip(switch_tel,sw.mgmt_ip)
         switch_tel.close()
-        #util.switch_details(db,sw,fout)
+        util.switch_details(db,sw, str(switch['manager']), fout)
         sw.ascii_load(log=fout)
 
     fout.close()

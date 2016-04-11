@@ -339,7 +339,7 @@ def remove_first_last_lines(string):
     ind2 = string.rfind('\n')
     return string[ind1+1:ind2]
 
-def switch_details(db,sw_obj,fout):
+def switch_details(db, sw_obj, man, fout):
     out = remove_first_last_lines(sw_obj.get_switch_module_details(fout))
     if out == "":
         return
@@ -348,7 +348,7 @@ def switch_details(db,sw_obj,fout):
     xml_soup = BeautifulSoup(out, "html.parser")
 
     switchDetails = {}
-    regexp = re.compile(r'fabric|supervisor|system')
+    regexp = re.compile(r'fabric|system')
     switchDetails['switch_name'] = sw_obj.switch_name
     switchDetails['linecard'] = []
     switchDetails['module_type'] = []
@@ -371,5 +371,6 @@ def switch_details(db,sw_obj,fout):
         detail['linecard'] = switchDetails['linecard'][i]
         detail['module_type'] = switchDetails['module_type'][i]
         detail['serial_num'] = switchDetails['serial_num'][i]
+        detail['manager'] = man
         db.insert(TABLE, **detail)
         detail = {}

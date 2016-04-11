@@ -35,6 +35,7 @@ if __name__ == "__main__":
         switches = []
         switches = db.select('', "end_time<='"+str(datetime.now())+"'", '*')
         for switch in switches:
+            print switch['switch_name']
             p = Process(target=pFunc.powerOff, args=(switch, db))
             p.start()
             processes.append(p)

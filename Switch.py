@@ -196,8 +196,129 @@ class Switch(object):
         switch_cons.expect(defn.SWITCH_PROMPT, 600)
         return
 
+    @staticmethod
+    def get_switch_module_details_from_mgmt(mgmt_ip, switch_pwd):
+        """
+        This function will retrieve the "show module | xml" details into a
+        xml which inturn will be returned to the caller
+        """
+        console = pexpect.spawn('telnet -l admin %s' % (mgmt_ip))
+        console.logfile = log 
+        time.sleep(2)
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, 'assword:', \
+                r'Login incorrect', defn.SWITCH_PROMPT], 5)
+        while i >= 0:
+            if i == 0:
+                console.close()
+                return "" 
+            if i == 1:
+                console.close()
+                return "" 
+            if i == 2:
+                console.sendline(switch_pwd)
+            if i == 3:
+                console.close()
+                return ""
+            if i == 4:
+                break
+            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, 'assword:', \
+                    r'Login incorrect', defn.SWITCH_PROMPT], 5)
+        
+        console.sendline('terminal length 0')
+        console.expect(defn.SWITCH_PROMPT)
+        console.sendline('show inventory | xml')
+        console.expect(defn.SWITCH_PROMPT)
+        xml_output = console.before
+        console.close()
+        return xml_output
+
+    @staticmethod
+    def get_switch_module_details_from_console(console_ip, port, switch_pwd):
+        """
+        This function will retrieve the "show module | xml" details into a
+        xml which inturn will be returned to the caller
+        """
+        console = pexpect.spawn('telnet %s %s' % (console_ip, port))
+        console.logfile = log 
+        time.sleep(2)
+        console.sendline('')
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, r'Login incorrect', \
+                'ogin:', 'assword:', defn.BASH_SHELL, defn.DEBUG_SHELL, \
+                defn.SWITCH_PROMPT], 5)
+        while i >= 0:
+            if i == 0:
+                console.close()
+                return "" 
+            if i == 1:
+                console.close()
+                return ""
+            if i == 2:
+                console.close()
+                return ""
+            if i == 3:
+                console.sendline('admin')
+            if i == 4:
+                console.sendline(switch_pwd)
+            if i == 5 or i == 6:
+                console.sendline('exit')
+            if i == 7:
+                break
+            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, r'Login incorrect', \
+                    'ogin:', 'assword:', defn.BASH_SHELL, defn.DEBUG_SHELL, \
+                    defn.SWITCH_PROMPT], 5)
+        
+        console.sendline('terminal length 0')
+        console.expect(defn.SWITCH_PROMPT)
+        console.sendline('show inventory | xml')
+        console.expect(defn.SWITCH_PROMPT)
+        xml_output = console.before
+        console.close()
+        return xml_output
+
     #### End of Static methods ####
-    
+
+    def ascii_load(self,log):
+        time.sleep(5*60)
+        child = pexpect.spawn('telnet %s %s'%(self.console_ip,self.act_port))
+        child.logfile = log
+        child.sendline('')
+        i = child.expect ([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'assword:', defn.SWITCH_PROMPT])
+        if i==0:
+            logging.info(str(child))
+            return 
+        if i==1:
+            logging.info(str(child))
+            return
+        if i==2:
+            child.sendline('admin')
+            child.expect ('assword:')
+            child.sendline(self.switch_pwd)
+            child.expect(defn.SWITCH_PROMPT)
+            "Now copy the running ascii file to power_config"
+            child.sendline('copy bootflash:run_power_config running-config')
+        if i==3:
+            child.sendline(self.switch_pwd)
+            child.expect(defn.SWITCH_PROMPT)
+            "Now copy the startup ascii file to power_config"
+            child.sendline('copy bootflash:run_power_config running-config')
+        if i==4:
+            "Now copy the ascii file to power_config"
+            child.sendline('copy bootflash:run_power_config running-config')
+
+        child.sendline('')
+        time.sleep(2)
+        child.sendline('')
+        time.sleep(2)
+        child.sendline('')
+        time.sleep(2)
+        child.sendline('')
+        time.sleep(2)
+        child.sendline('')
+        time.sleep(2)
+        
+        child.close()
+        return True
+
     def clear_console(self, log):
         """
         Clear telnet console for both active and standby ports
@@ -365,85 +486,14 @@ class Switch(object):
         else: 
             console.close()
             return False
-    
-    def get_switch_module_details(self,log):
+
+    def get_switch_module_details(self, log):
         """
         This function will retrieve the "show module | xml" details into a
-        dictionary which inturn will be returned to the caller
+        xml format which inturn will be returned to the caller
         """
         logging.info("Logging into switch %s to collect details", self.switch_name)
-        console = pexpect.spawn('telnet -l admin %s' % (self.mgmt_ip))
-        console.logfile = log
-        time.sleep(2)
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'assword:', \
-                'Login incorrect', defn.SWITCH_PROMPT], 10)
-        while i >= 0:
-            if i == 0:
-                console.close()
-                return "" 
-            if i == 1:
-                console.close()
-                return "" 
-            if i == 2:
-                console.sendline('admin')
-                console.expect('Password:')
-                console.sendline(self.switch_pwd)
-            if i == 3:
-                console.sendline(self.switch_pwd)
-            if i==4:
-                console.close()
-                return ""
-            if i == 5:
-                break
-            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'assword:', \
-                    'Login incorrect', defn.SWITCH_PROMPT], 10)
-        
-        console.sendline('terminal length 0')
-        console.expect(defn.SWITCH_PROMPT)
-        console.sendline('show inventory module | xml')
-        console.expect(defn.SWITCH_PROMPT)
-        xml_output = console.before
-        console.close()
+        xml = get_switch_module_details_from_mgmt(self.mgmt_ip, self.switch_pwd)
+        if xml == "":
+           xml = get_switch_module_details_from_console(self.console_ip, self.port, self.switch_pwd) 
         return xml_output
-
-    def ascii_load(self,log):
-        time.sleep(5*60)
-        child = pexpect.spawn('telnet %s %s'%(self.console_ip,self.act_port))
-        child.logfile = log
-        child.sendline('')
-        i = child.expect ([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'assword:', defn.SWITCH_PROMPT])
-        if i==0:
-            logging.info(str(child))
-            return 
-        if i==1:
-            logging.info(str(child))
-            return
-        if i==2:
-            child.sendline('admin')
-            child.expect ('assword:')
-            child.sendline(self.switch_pwd)
-            child.expect(defn.SWITCH_PROMPT)
-            "Now copy the running ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-        if i==3:
-            child.sendline(self.switch_pwd)
-            child.expect(defn.SWITCH_PROMPT)
-            "Now copy the startup ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-        if i==4:
-            "Now copy the ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        
-        child.close()
-        return True

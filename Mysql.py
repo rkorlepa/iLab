@@ -4,7 +4,7 @@
 import MySQLdb, sys
 from collections import OrderedDict
 
-default_table_name = 'switches_test'
+default_table_name = 'switches'
 
 class Mysql(object):
     """

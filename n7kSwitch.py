@@ -158,8 +158,6 @@ class n7kSwitch(Switch):
         
         return True
 
-    #### End of Static methods ####
-    
     def load_or_telnet_image(self, log):
         """
         This definition is to load the images from loader prompt
@@ -334,44 +332,3 @@ class n7kSwitch(Switch):
         
         console.close()
         return
-    
-    def check_any_logged_user(self, log):
-        """
-        Check if the user is logged into the system. For this switch ip needs
-        to be set else it will not work.
-            switch# bash
-            (none)(shell)> who
-            admin    ttyS0        Oct 11 03:58
-            admin    pts/0        Oct 11 04:01 (10.21.31.111)
-            (none)(shell)>
-        This above example shows there are 2 users logged into as admin.
-        """
-        console = pexpect.spawn('ssh admin@%s' % (self.console_ip))
-        console.logfile = log
-        time.sleep(2)
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'Password:', defn.SWITCH_PROMPT])
-        if i == 0:
-            return False 
-        if i == 1:
-            return False 
-        if i == 2:
-            console.sendline('admin')
-            console.expect('Password:')
-            console.sendline(self.switch_pwd)
-        if i == 3:
-            console.sendline(self.switch_pwd)
-        if i == 4:
-            pass
-
-        console.expect(SWITCH_PROMPT)
-        console.sendline('bash')
-        console.expect(BASH_SHELL)
-        console.sendline('who')
-        console.expect(BASH_SHELL)
-        details = console.before
-        if details.count('admin') > 1:
-            console.close()
-            return True
-        else: 
-            console.close()
-            return False

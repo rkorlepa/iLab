@@ -32,16 +32,26 @@ def remove_first_last_lines(string):
     ind2 = string.rfind('\n')
     return string[ind1+1:ind2]
 
-def switch_details(db, switch, man, fout):
+def switch_details(db, switch, man, fout=None):
+    detail = {}
     out = remove_first_last_lines(switch.get_switch_module_details(fout))
     if out == "":
+        db.delete(TABLE, 'switch_name=%s', switch.switch_name)
+        detail['switch_name'] = switch.switch_name
+        detail['linecard'] = 'NONE' 
+        detail['module_type'] = 'NONE' 
+        detail['serial_num'] = 'NONE' 
+        detail['manager'] = man 
+        detail['switchIssue'] = 'yes'
+        db.insert(TABLE, **detail)
+        detail = {}
         return
     out = out.replace(" ","")
     out = out.replace("__readonly__", "readonly")
     xml_soup = BeautifulSoup(out, "html.parser")
 
     switchDetails = {}
-    regexp = re.compile(r'fabric|system')
+    regexp = re.compile(r'fabric|system|Chassis|chassis|power|Power')
     switchDetails['switch_name'] = switch.switch_name
     switchDetails['linecard'] = []
     switchDetails['module_type'] = []
@@ -57,7 +67,6 @@ def switch_details(db, switch, man, fout):
     if len(switchDetails['linecard']) != 0:
         db.delete(TABLE, 'switch_name=%s', switch.switch_name)
 
-    detail = {}
     print "Detail added for %s" % switch.switch_name
     for i in range(0,len(switchDetails['linecard'])):
         detail['switch_name'] = switch.switch_name
@@ -76,12 +85,13 @@ if __name__ == "__main__":
     strfile = '%ssw_details.log' % defn.log_dir
     cli_cmd = 'rm %s' % (strfile)
     subprocess.call(cli_cmd, shell=True)
-    fout = file(strfile, 'a')
-    logging.basicConfig(filename=strfile, format='%(asctime)s: %(levelname)s : %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    #fout = file(strfile, 'a')
+    #logging.basicConfig(filename=strfile, format='%(asctime)s: %(levelname)s : %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
-    switches = db.select('switches',None,'*')
+    #switches = db.select('switches',None,'*')
+    switches = db.select('switches', 'id > 1235', '*')
     for switch in switches:
         sw = n7kSwitch(switch)
-        switch_details(db, sw, switch['manager'], fout)
+        switch_details(db, sw, switch['manager'])
 
     print "Collected all the Current Details"

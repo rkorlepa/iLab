@@ -13,13 +13,13 @@ import traceback
 import pexpect
 import re
 import logging
+from abc import ABCMeta, abstractmethod
 
-import utils as util
-import definitions as defn
+from ilab import *
+from Switch import Switch 
+from Utils import Utils
 
-from Switch import Switch
-
-class n9kSwitch(Switch):
+class n89kSwitch(Switch):
     
     def __init__(self, switch):
         Switch.__init__(self, switch)
@@ -45,7 +45,7 @@ class n9kSwitch(Switch):
 
     #### End of Static methods ####
 
-    def ascii_copy(self, db, switch_cons):
+    def ascii_copy(self, switch_cons):
         """
         This method is to 
         """
@@ -53,18 +53,18 @@ class n9kSwitch(Switch):
         founds = 0
         
         switch_cons.sendline('switchback')
-        switch_cons.expect(defn.SWITCH_PROMPT)
+        switch_cons.expect(SWITCH_PROMPT)
 
         #For storing the kickstart and the system images
         switch_cons.sendline('show version | grep "image file is"')
-        switch_cons.expect(defn.SWITCH_PROMPT)
+        switch_cons.expect(SWITCH_PROMPT)
         string = switch_cons.before
         if "///" in string:
             sys = string.split('///')[1]
             sys = sys.split()[0]
         if sys != "":
             switch_cons.sendline('dir')
-            switch_cons.expect(defn.SWITCH_PROMPT)
+            switch_cons.expect(SWITCH_PROMPT)
             dir = switch_cons.before
             imgs = dir.split()
             if sys in imgs:
@@ -72,52 +72,52 @@ class n9kSwitch(Switch):
 
         logging.info("Found sys %d", founds)
         if founds==1:
-            db.update_images(self.switch_name,"",sys)
+            Utils.update_images(self.switch_name,"",sys)
         else:
-            db.update_images(self.switch_name,"","")
+            Utils.update_images(self.switch_name,"","")
 
         #Now write erase and copy the running config to file
         switch_cons.sendline('delete run_power_config n')
-        switch_cons.expect(defn.SWITCH_PROMPT, 60)
+        switch_cons.expect(SWITCH_PROMPT, 60)
         switch_cons.sendline('delete start_power_config n')
-        switch_cons.expect(defn.SWITCH_PROMPT, 60)
+        switch_cons.expect(SWITCH_PROMPT, 60)
 
         #no boot kick and sys
         switch_cons.sendline('config t')
-        switch_cons.expect(defn.SWITCH_PROMPT, 60)
+        switch_cons.expect(SWITCH_PROMPT, 60)
         switch_cons.sendline('no boot nxos')
-        switch_cons.expect(defn.SWITCH_PROMPT, 60)
+        switch_cons.expect(SWITCH_PROMPT, 60)
         #write erase
         switch_cons.sendline('write erase')
         switch_cons.expect('Do you wish to proceed anyway')
         switch_cons.sendline('y')
-        switch_cons.expect(defn.SWITCH_PROMPT, 120)
+        switch_cons.expect(SWITCH_PROMPT, 120)
         #write erase boot
         switch_cons.sendline('write erase boot')
         switch_cons.expect('Do you wish to proceed anyway')
         switch_cons.sendline('y')
-        switch_cons.expect(defn.SWITCH_PROMPT, 120)
+        switch_cons.expect(SWITCH_PROMPT, 120)
         
         "Now copy the running config to run_power_config file"
         switch_cons.sendline('show running-config vdc-all > run_power_config')
-        i = switch_cons.expect([defn.SWITCH_PROMPT,r'yes/no',pexpect.TIMEOUT, pexpect.EOF])
+        i = switch_cons.expect([SWITCH_PROMPT,r'yes/no',pexpect.TIMEOUT, pexpect.EOF])
         if i==0:
             pass
         if i==1:
             switch_cons.sendline('yes')
-            switch_cons.expect(defn.SWITCH_PROMPT,180)
+            switch_cons.expect(SWITCH_PROMPT,180)
         if i==2 or i==3:
             print "Something wrong with switch %s so go ahead and poweroff" % self.switch_name
             return False
         
         "Now copy the startup config to run_power_config file"
         switch_cons.sendline('show startup-config vdc-all > start_power_config')
-        i = switch_cons.expect([defn.SWITCH_PROMPT,r'yes/no',pexpect.TIMEOUT, pexpect.EOF])
+        i = switch_cons.expect([SWITCH_PROMPT,r'yes/no',pexpect.TIMEOUT, pexpect.EOF])
         if i==0:
             pass
         if i==1:
             switch_cons.sendline('yes')
-            switch_cons.expect(defn.SWITCH_PROMPT,180)
+            switch_cons.expect(SWITCH_PROMPT,180)
         if i==2 or i==3:
             print "Something wrong with switch %s so go ahead and poweroff" % self.switch_name
             return False
@@ -151,8 +151,8 @@ class n9kSwitch(Switch):
         i = child.expect([pexpect.TIMEOUT, pexpect.EOF, 'loader>.*', 'Booting kickstart image:', \
                 'Checking all filesystems', 'INIT: Entering runlevel', 'Abort Auto Provisioning and continue.*', \
                 'enable admin vdc.*', 'enforce secure password.*', 'the password for.*', \
-                'the basic configuration dialog.*', defn.SWITCH_LOGIN, 'Password:', defn.BASH_SHELL, \
-                defn.DEBUG_SHELL, 'wish to continue:', r'switch.boot.#',  defn.SWITCH_PROMPT], timeout=TIMEOUT)
+                'the basic configuration dialog.*', SWITCH_LOGIN, 'Password:', BASH_SHELL, \
+                DEBUG_SHELL, 'wish to continue:', r'switch.boot.#',  SWITCH_PROMPT], timeout=TIMEOUT)
         while i>=0:
             if i==0:
                 TIMEOUT=30
@@ -210,13 +210,13 @@ class n9kSwitch(Switch):
             i = child.expect([pexpect.TIMEOUT, pexpect.EOF, 'loader>.*', 'Booting kickstart image:', \
                     'Checking all filesystems', 'INIT: Entering runlevel', 'Abort Auto Provisioning and continue.*', \
                     'enable admin vdc.*', 'enforce secure password.*', 'the password for.*', \
-                    'the basic configuration dialog.*', defn.SWITCH_LOGIN, 'Password:', defn.BASH_SHELL, \
-                    defn.DEBUG_SHELL, 'wish to continue:', r'switch.boot.#',  defn.SWITCH_PROMPT], timeout=TIMEOUT)
+                    'the basic configuration dialog.*', SWITCH_LOGIN, 'Password:', BASH_SHELL, \
+                    DEBUG_SHELL, 'wish to continue:', r'switch.boot.#',  SWITCH_PROMPT], timeout=TIMEOUT)
         
         child.sendline('')
-        child.expect(defn.SWITCH_PROMPT)
+        child.expect(SWITCH_PROMPT)
         child.sendline('terminal length 0')
-        child.expect(defn.SWITCH_PROMPT)
+        child.expect(SWITCH_PROMPT)
         return child
 
     def copy_images_to_switch(self, log):
@@ -230,7 +230,7 @@ class n9kSwitch(Switch):
         console.logfile = log
         time.sleep(2)
         console.sendline('')
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, defn.SWITCH_PROMPT, 'loader>.*'], 120)
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, SWITCH_LOGIN, SWITCH_PROMPT, 'loader>.*'], 120)
         if i==0 or i==1:
             logging.debug(str(console))
             console.close()
@@ -240,13 +240,13 @@ class n9kSwitch(Switch):
                 console.sendline('admin')
                 console.expect('assword:')
                 console.sendline(self.switch_pwd)
-                console.expect(defn.SWITCH_PROMPT)
+                console.expect(SWITCH_PROMPT)
             console.sendline('switchback')
-            console.expect(defn.SWITCH_PROMPT)
+            console.expect(SWITCH_PROMPT)
             console.sendline('terminal length 0')
-            console.expect(defn.SWITCH_PROMPT)
+            console.expect(SWITCH_PROMPT)
             console.sendline('dir')
-            console.expect(defn.SWITCH_PROMPT)
+            console.expect(SWITCH_PROMPT)
             dirs = console.before
             if self.sys in dirs.split():
                 logging.info("Found the System image in bootflash")
@@ -293,7 +293,7 @@ class n9kSwitch(Switch):
         
         for img in imgs:
             console.sendline('delete bootflash:%s' % img)
-            console.expect(defn.SWITCH_PROMPT)
+            console.expect(SWITCH_PROMPT)
         
         time.sleep(10)
         d_file = self.sys
@@ -322,7 +322,7 @@ class n9kSwitch(Switch):
         console = pexpect.spawn('ssh admin@%s' % (self.console_ip))
         console.logfile = log
         time.sleep(2)
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, defn.SWITCH_LOGIN, 'Password:', defn.SWITCH_PROMPT])
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, SWITCH_LOGIN, 'Password:', SWITCH_PROMPT])
         if i == 0:
             return False 
         if i == 1:

@@ -14,7 +14,6 @@ import pexpect
 import re
 import logging
 
-import utils as util
 import definitions as defn
 
 from Switch import Switch

@@ -15,8 +15,7 @@ import re
 import logging
 import telnetlib
 
-import utils as util
-import definitions as defn
+from ilab import *
 
 class Power(object):
 
@@ -65,10 +64,10 @@ class Power(object):
             child.sendline(str(user))
             child.expect('P|password')
             child.sendline(pwd)
-            child.expect(defn.POWER_PROMPT)
+            child.expect(POWER_PROMPT)
         if i == 3:
             child.sendline(pwd)
-            child.expect(defn.POWER_PROMPT)
+            child.expect(POWER_PROMPT)
             pass
         
         for out in outlets:
@@ -77,7 +76,7 @@ class Power(object):
             child.expect('[y/n]')
             time.sleep(1)
             child.sendline('y')
-            child.expect(defn.POWER_PROMPT)
+            child.expect(POWER_PROMPT)
         child.sendline('exit')
         child.close()
         return

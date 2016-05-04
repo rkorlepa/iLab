@@ -1,12 +1,14 @@
-#!/ws/rkorlepa-sjc/python/bin/python
+#!/home/ilab/python2.7.11/bin/python
 
-from Database import *
 from subprocess import check_output
+
+from ilab import *
+from ilab.Database import *
 
 if __name__ == '__main__':
     for sw in Switches.select().where(Switches.manager==''):
         insertList = []
-        users = str(sw.user).split(',')
+        users = str(sw.user).lower().split(',')
         for user in users:
             res = check_output(["/usr/cisco/bin/rchain","-h","-M %s" % (user)]).split()
             if res:

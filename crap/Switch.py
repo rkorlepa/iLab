@@ -15,8 +15,7 @@ import re
 import logging
 from abc import ABCMeta, abstractmethod
 
-import utils as util
-import definitions as defn
+from ilab import *
 
 class Switch(object):
     

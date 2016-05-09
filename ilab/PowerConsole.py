@@ -1,9 +1,9 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 
 #-----------------------------------------------------------------------------
-#  Copyright (C) 2015  The iLab Development Team
+#  Copyright (C) 2016  The iLab Development Team
 #
-#  version = 3.0
+#  version = 1.0
 #  Distributed under the terms of the Cisco Systems Inc. The full license is
 #  in the file COPYING, distributed as part of this software.
 #-----------------------------------------------------------------------------

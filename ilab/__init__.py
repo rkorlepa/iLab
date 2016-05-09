@@ -1,33 +1,44 @@
 #!/ws/rkorlepa-sjc/python/bin/python
 
-import os, sys
+import sys, os,re 
+import logging
+from jinja2 import Environment, PackageLoader
 
 '''Used for db connection and remote host switch files'''
-DB_DATABASE = 'ilab'
+DB_DATABASE = 'ilab_test'
 DB_USER = 'ilab'
 DB_PWD = 'nbv_12345'
 DB_HOST = '172.23.152.145'
 HOST_PROMPT = '\~\$'
 
-'''Used in loadimage definition'''
-SWITCH_PROMPT = '#' 
-SWITCH_LOGIN = 'login: '
-BASH_SHELL = '\(shell\)>'
-DEBUG_SHELL = 'Linux[a-zA-Z\(\)]*#'
-SWITCH_STANDBY = '(standby)'
-
-'''Used during power on/off of apc/pdu'''
-POWER_PROMPT = '[#>]'
-PX_POWER_PROMPT = 'clp:/->'
-SSH_NEWKEY = '(?i)are you sure you want to continue connecting'
+'''Log directory in server'''
+LOG_DIR = '/ws/rkorlepa-sjc/iLab-logs/'
+DATA_DIR = '/home/ilab/iLab-switch-data/'
 
 '''Used for clear console only'''
 CONSOLE_PROMPT = '[a-zA-Z0-9_-]+>'
 EN_CONSOLE_PROMPT = '[a-zA-Z0-9_-]+#'
 
-'''Log directory in server'''
-LOG_DIR = '/home/ilab/iLab-logs/'
-DATA_DIR = '/home/ilab/iLab-switch-data/'
+'''Definitions to compare expect strings during telnet/ssh'''
+SWITCH_PROMPT = '#' 
+SWITCH_STANDBY = '(standby)'
+SWITCH_LOGIN = '(?i)login:'
+PWD_PROMPT = '(?i)password:'
+BASH_SHELL = '\(shell\)>'
+DEBUG_SHELL = 'Linux[a-zA-Z\(\)]*#'
+INVALID_CLI = ['Invalid','invalid','command not found']
+LOGIN_INCORRECT = '(?i)Login incorrect'
+AUTH_ISSUE = '(?i)authentication failure'
+LOADER_PROMPT = '(?i)loader>'
+BOOT_PROMPT = '(?i)\(boot\)'
 
-'''For JSON Check'''
-types = ['n7k', 'xbow', 'n9k', 'n6k']
+'''Definitions for power console of apc/pdu'''
+POWER_PROMPT = '[#>]'
+PX_POWER_PROMPT = 'clp:/->'
+SSH_NEWKEY = '(?i)are you sure you want to continue connecting'
+
+
+ilab_templates = Environment(loader=PackageLoader('ilab','templates'))
+
+def ilab_template(name):
+	return ilab_templates.get_template(name)

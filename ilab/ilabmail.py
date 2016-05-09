@@ -1,9 +1,9 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 
 #-----------------------------------------------------------------------------
-#  Copyright (C) 2015  The iLab Development Team
+#  Copyright (C) 2016  The iLab Development Team
 #
-#  version = 3.0
+#  version = 1.0
 #  Distributed under the terms of the Cisco Systems Inc. The full license is
 #  in the file COPYING, distributed as part of this software.
 #-----------------------------------------------------------------------------
@@ -15,8 +15,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-class ICEmail:
-    def __init__(self, from_list, to_list, cc_list='', bcc_list='ilab@cisco.com'):
+class IlabEmail:
+    def __init__(self, from_list, to_list, cc_list='', bcc_list=''):
         self.from_list = from_list
         self.to_list = to_list
         self.cc_list = cc_list
@@ -57,7 +57,7 @@ class ICEmail:
     def send(self, send_to=''):
         'Send email with subject body and attachments'
         self.add_line('\nFrom Host = %s\n' % (self.hostname))
-        body = MIMEText('\n'.join(self.lines))
+        body = MIMEText('\n'.join(self.lines),'html')
         msg = MIMEMultipart('alternative')
         msg['To'] = self.to_list
         if send_to:

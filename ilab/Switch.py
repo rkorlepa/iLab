@@ -1,9 +1,9 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 
 #-----------------------------------------------------------------------------
-#  Copyright (C) 2015  The iLab Development Team
+#  Copyright (C) 2016  The iLab Development Team
 #
-#  version = 3.0
+#  version = 1.0
 #  Distributed under the terms of the Cisco Systems Inc. The full license is
 #  in the file COPYING, distributed as part of this software.
 #-----------------------------------------------------------------------------
@@ -16,21 +16,24 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from ilab import *
+from ilab.Exceptions import *
+from ilab.Utils import Utils
 
 class Switch(object):
     
     def __init__(self, switch):
         self._id = str(switch['id'])
         self._switch_name = str(switch['switch_name'])
-        self._console_ip = str(switch['console_ip'])
-        self._mgmt_ip = str(switch['mgmt_ip'])
+        self.console_ip = str(switch['console_ip'])
+        self._mgmt_ip = str(switch['mgmt_ip']) if switch['mgmt_ip'] else None
         self.act_port = str(switch['active_port'])
-        self.stnd_port = str(switch['standby_port'])
+        self.stnd_console_ip = str(switch['stnd_console_ip']) if switch['stnd_console_ip'] else None
+        self.stnd_port = str(switch['standby_port']) if switch['standby_port'] else None
         self._switch_pwd = str(switch['switch_pwd'])
         self._console_pwd = 'nbv123'
-        self._log = "" 
-        self.kick = str(switch['kickstart'])
-        self.sys = str(switch['system'])
+        self.log = None 
+        self.kick = str(switch['kickstart']) if switch['kickstart'] else None
+        self.sys = str(switch['system']) if switch['system'] else None
 
     def __str__(self):
         return "Switch(switch_name=%s, console_ip=%s, mgmt_ip=%s, active_port=%s, standby_port=%s)" \
@@ -48,12 +51,16 @@ class Switch(object):
     def switch_name(self):
         return self._switch_name
     
-    # Getter for console_ip
+    # Getter/Setter for console_ip
     @property
     def console_ip(self):
         return self._console_ip
     
-    # Getter for console_ip
+    @console_ip.setter
+    def console_ip(self, console_ip):
+        self._console_ip = console_ip
+    
+    # Getter for mgmt_ip
     @property
     def mgmt_ip(self):
         return self._mgmt_ip
@@ -66,6 +73,15 @@ class Switch(object):
     @act_port.setter
     def act_port(self, port):
         self._act_port = port
+    
+    # Getter/Setter for stnd_console_ip
+    @property
+    def stnd_console_ip(self):
+        return self._stnd_console_ip
+    
+    @stnd_console_ip.setter
+    def stnd_console_ip(self, stnd_console_ip):
+        self._stnd_console_ip = stnd_console_ip
     
     # Getter/Setter for standby port
     @property
@@ -91,6 +107,10 @@ class Switch(object):
     def log(self):
         return self._log
     
+    @log.setter
+    def log(self, log):
+        self._log = log
+
     # Getter/Setter for kickstart image
     @property
     def kick(self):
@@ -114,13 +134,52 @@ class Switch(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def load_or_telnet_image(self, log):
+    def load_image_using_telnet(self):
         return
     
     @abstractmethod 
-    def copy_images_to_switch(self, log):
+    def copy_images_to_switch(self):
         return
 
+    #### Start of Private methods ####
+    
+    def __clear_telnet_port(self, console_ip, port):
+        logging.info("Clearing console with ip=%s and ports=%s", console_ip, port)
+        console = pexpect.spawn('telnet %s'%(console_ip))
+        console.logfile = self.log
+        console.sendline('')
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, PWD_PROMPT, CONSOLE_PROMPT, EN_CONSOLE_PROMPT], 5)
+        if i == 0:
+            raise TimeoutError('Clear Console Timeout error')
+        if i == 1:
+            raise EofError('Clear Console EOF error')
+        if i == 2:
+            console.sendline(self.console_pwd)
+            console.expect(CONSOLE_PROMPT)
+            console.sendline('en')
+            console.expect('Password:')
+            console.sendline(self.console_pwd)
+        if i == 3:
+            console.sendline('en')
+            console.expect('Password:')
+            console.sendline(self.console_pwd)
+        if i == 4:
+            pass
+        
+        po = int(port)%100
+        console.expect(EN_CONSOLE_PROMPT)
+        console.sendline('clear line %d'%(po))
+        console.sendline('\r')
+        console.expect('confirm')
+        console.sendline('\r')
+        console.expect(EN_CONSOLE_PROMPT)
+        console.sendline('exit')
+        time.sleep(1)
+        console.close()
+        return
+
+    #### End of Private methods ####
+    
     #### Start of Static methods ####
 
     @staticmethod
@@ -201,218 +260,159 @@ class Switch(object):
         switch_cons.expect(SWITCH_PROMPT, 600)
         return
 
-    @staticmethod
-    def get_switch_module_details_from_mgmt(mgmt_ip, switch_pwd, log):
-        xml = {}
-        console = pexpect.spawn('telnet -l admin %s' % (mgmt_ip))
-        console.logfile = log 
+    #### End of Static methods ####
+
+    def connect_mgmt_ip(self, using):
+        """
+        This definition will telnet/ssh to the active sup mgmt ip provided 
+        in the switch object (Default is ssh)
+        [IMP]Telnet handle and needs to be closed by client
+
+            Eg: testuser[13:00:00]> ssh admin@111.111.111.111
+               or
+                testuser[13:00:00]> telnet -l admin 111.111.111.111
+        """
+        if using == 'ssh':
+            logging.info('Trying to ssh to mgmt ip %s', self.mgmt_ip)
+            Utils.remove_known_hosts(self.mgmt_ip)
+            console = pexpect.spawn('ssh admin@%s' % (self.mgmt_ip))
+        else:
+            logging.info('Trying to telnet to mgmt ip %s', self.mgmt_ip)
+            console = pexpect.spawn('telnet -l admin %s' % (self.mgmt_ip))
+        console.logfile = self.log
         time.sleep(2)
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, 'assword:', \
-                r'Login incorrect', SWITCH_PROMPT], 5)
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
+                AUTH_ISSUE, LOADER_PROMPT, BOOT_PROMPT, PWD_PROMPT, SWITCH_PROMPT], 5)
         while i >= 0:
             if i == 0:
                 console.close()
-                return "" 
+                logging.info('get_switch_module_details_from_mgmt, Timed out, Not able to access mgmt')
+                raise TimeoutError('get_switch_module_details_from_mgmt, Timed out, Not able to access mgmt')
             if i == 1:
                 console.close()
-                return "" 
-            if i == 2:
-                console.sendline(switch_pwd)
-            if i == 3:
+                logging.info('get_switch_module_details_from_mgmt, Eof error, Not able to access mgmt')
+                raise EofError('get_switch_module_details_from_mgmt, Eof error, Not able to access mgmt')
+            if i == 2 or i == 3:
                 console.close()
-                return ""
-            if i == 4:
+                logging.info('get_switch_module_details_from_mgmt, Password error')
+                raise PasswordError('get_switch_module_details_from_mgmt, Password error')
+            if i == 2 or i == 3:
+                console.close()
+                logging.info('get_switch_module_details_from_mgmt, Switch in loader/boot prompt')
+                raise LoaderError('get_switch_module_details_from_mgmt, Switch in loader/boot prompt')
+            if i == 6:
+                console.sendline(self.switch_pwd)
+            if i == 7:
                 break
-            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, 'assword:', \
-                    r'Login incorrect', SWITCH_PROMPT], 5)
-        
-        console.sendline('terminal length 0')
-        console.expect(SWITCH_PROMPT)
-        console.sendline('show inventory | xml')
-        console.expect(SWITCH_PROMPT)
-        xml['inv'] = console.before
-        console.sendline('show system uptime | xml')
-        console.expect(SWITCH_PROMPT)
-        xml['uptime'] = console.before
-        console.close()
-        return xml
+            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
+                    AUTH_ISSUE, LOADER_PROMPT, BOOT_PROMPT, PWD_PROMPT, SWITCH_PROMPT], 5)
 
-    @staticmethod
-    def get_switch_module_details_from_console(console_ip, port, switch_pwd, log):
-        xml = {}
-        console = pexpect.spawn('telnet %s %s' % (console_ip, port))
-        console.logfile = log 
+        return console
+
+    def telnet_console_port(self):
+        """
+        This definition will telnet to the active sup console port
+        provided in the switch object
+        [IMP]Telnet handle and needs to be closed by client
+
+            Eg: testuser[13:00:00]> telnet 111.111.111.111 2222
+        """
+        logging.info('Telnet to console port with ip %s and port %s',self.console_ip, self.act_port)
+        console = pexpect.spawn('telnet %s %s' % (self.console_ip, self.act_port))
+        console.logfile = self.log 
         time.sleep(2)
         console.sendline('')
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, r'Login incorrect', \
-                'ogin:', 'assword:', BASH_SHELL, DEBUG_SHELL, \
-                SWITCH_PROMPT], 5)
+        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
+                LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
+                'ogin:', PWD_PROMPT, SWITCH_PROMPT], 5)
         while i >= 0:
             if i == 0:
                 console.close()
-                return "" 
+                logging.info('get_switch_module_details_from_console, Timed out, Not able to access mgmt')
+                raise TimeoutError('get_switch_module_details_from_console, Timed out, Not able to access mgmt')
             if i == 1:
                 console.close()
-                return ""
+                logging.info('get_switch_module_details_from_console, Eof error, Not able to access mgmt')
+                raise EofError('get_switch_module_details_from_console, Eof error, Not able to access mgmt')
             if i == 2:
                 console.close()
-                return ""
-            if i == 3:
-                console.sendline('admin')
-            if i == 4:
-                console.sendline(switch_pwd)
+                logging.info('get_switch_module_details_from_console, Password error')
+                raise PasswordError('get_switch_module_details_from_console, Password error')
+            if i == 3 or i == 4:
+                console.close()
+                logging.info('get_switch_module_details_from_console, Switch in loader/boot prompt')
+                raise LoaderError('get_switch_module_details_from_console, Switch in loader/boot prompt')
             if i == 5 or i == 6:
                 console.sendline('exit')
             if i == 7:
+                console.sendline('admin')
+            if i == 8:
+                console.sendline(self.switch_pwd)
+            if i == 9:
                 break
-            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, r'Login incorrect', \
-                    'ogin:', 'assword:', BASH_SHELL, DEBUG_SHELL, \
-                    SWITCH_PROMPT], 5)
+            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
+                    LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
+                    'ogin:', PWD_PROMPT, SWITCH_PROMPT], 5)
         
-        console.sendline('terminal length 0')
-        console.expect(SWITCH_PROMPT)
-        console.sendline('show inventory | xml')
-        console.expect(SWITCH_PROMPT)
-        xml['inv'] = console.before
-        console.sendline('show system uptime | xml')
-        console.expect(SWITCH_PROMPT)
-        xml['uptime'] = console.before
-        console.close()
-        return xml
+        return console
 
-    #### End of Static methods ####
-
-    def ascii_load(self,log):
-        time.sleep(5*60)
-        child = pexpect.spawn('telnet %s %s'%(self.console_ip,self.act_port))
-        child.logfile = log
-        child.sendline('')
-        i = child.expect ([pexpect.TIMEOUT, pexpect.EOF, SWITCH_LOGIN, 'assword:', SWITCH_PROMPT])
-        if i==0:
-            logging.info(str(child))
-            return 
-        if i==1:
-            logging.info(str(child))
-            return
-        if i==2:
-            child.sendline('admin')
-            child.expect ('assword:')
-            child.sendline(self.switch_pwd)
-            child.expect(SWITCH_PROMPT)
-            "Now copy the running ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-        if i==3:
-            child.sendline(self.switch_pwd)
-            child.expect(SWITCH_PROMPT)
-            "Now copy the startup ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-        if i==4:
-            "Now copy the ascii file to power_config"
-            child.sendline('copy bootflash:run_power_config running-config')
-
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        child.sendline('')
-        time.sleep(2)
-        
-        child.close()
-        return True
-
-    def clear_console(self, log):
+    def clear_console(self):
         """
         Clear telnet console for both active and standby ports
-        Telnet handle is closed in function
+        [IMP]Telnet handle is closed in function
+
             # telnet 172.23.152.100 (enter password)
             # en (enter password)
             # clear line 10
             # clear line 11
         """
-        allports = [self.act_port, self.stnd_port]
-        logging.info("Clearing console with ip=%s and ports=%s", self.console_ip, allports)
-        console = pexpect.spawn('telnet %s'%(self.console_ip))
-        console.logfile = log
-        console.sendline('')
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, 'Password:', CONSOLE_PROMPT, EN_CONSOLE_PROMPT])
-        if i == 0:
-            logging.debug('TIMEOUT exception. Here is what telnet said:')
-            logging.debug(str(console))
-            sys.exit (1)
-        if i == 1:
-            logging.debug('EOF expection. Here is what telnet said:')
-            logging.debug(str(console))
-            sys.exit (1)
-        if i == 2:
-            console.sendline(self.console_pwd)
-            console.expect(CONSOLE_PROMPT)
-            console.sendline('en')
-            console.expect('Password:')
-            console.sendline(self.console_pwd)
-        if i == 3:
-            console.sendline('en')
-            console.expect('Password:')
-            console.sendline(self.console_pwd)
-        if i == 4:
-            pass
-        
-        for port in allports:
-            if port != '':
-                po = int(port)%100
-                console.expect(EN_CONSOLE_PROMPT)
-                console.sendline('clear line %d'%(po))
-                console.sendline('\r')
-                console.expect('confirm')
-                console.sendline('\r')
-        console.expect(EN_CONSOLE_PROMPT)
-        console.sendline('exit')
-        time.sleep(2)
-        console.close()
+        try:
+            self.__clear_telnet_port(self.console_ip, self.act_port)
+            if self.stnd_port and self.stnd_console_ip:
+                self.__clear_telnet_port(self.stnd_console_ip, self.stnd_port)
+        except:
+            logging.info("Some issue in clearing console")
         return
 
-    def clear_screen(self,log):
+    def clear_screen(self):
         """
         This definitions will clear the switch console and bring it to switch
         prompt
             ....CTRL+C.....
             switch#
         """
-        ports = []
-        ports.append(self.act_port)
-        if self.stnd_port != "":
-            ports.append(self.stnd_port)
+        logging.info("Clearing screen for console_ip %s port %s", self.console_ip, self.act_port)
+        console = pexpect.spawn('telnet %s %s'%(self.console_ip,self.act_port))
+        console.logfile = self.log
+        console.send('\003')
+        console.close()
         
-        for port in ports:
-            logging.info("Clearing screen for port %s", port)
-            console = pexpect.spawn('telnet %s %s'%(self.console_ip,port))
-            console.logfile = log
+        if self.stnd_port and self.stnd_console_ip:
+            logging.info("Clearing screen for console_ip %s port %s", self.stnd_console_ip, self.stnd_port)
+            console = pexpect.spawn('telnet %s %s'%(self.stnd_console_ip,self.stnd_port))
+            console.logfile = self.log
             console.send('\003')
-            time.sleep(1)
             console.close()
         return
 
-    def check_standby(self, port, log):
+    def check_standby(self, console_ip, port):
         """
         This definition is to check if the given port is for active sup or standby sup
-        Telnet handle is closed in function and returned True or False
+        [IMP]Telnet handle is closed in function and returned True or False
+
             switch(standby) # show vdc
                               ^
             Invalid command....
         """
-        logging.info("Checking if port=%s is standby for ip=%s", port, self.console_ip)
-        switch = pexpect.spawn('telnet %s %s'%(self.console_ip,port))
-        switch.logfile = log
-        time.sleep(2)
+        logging.info("Checking if port=%s is standby for ip=%s", port, console_ip)
+        switch = pexpect.spawn('telnet %s %s'%(console_ip,port))
+        switch.logfile = self.log
         switch.sendline('')
-        i = switch.expect([pexpect.TIMEOUT, pexpect.EOF, SWITCH_STANDBY, DEBUG_SHELL, BASH_SHELL, \
-                SWITCH_PROMPT, SWITCH_LOGIN, 'assword:'], 5)
+        i = switch.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, SWITCH_STANDBY, \
+                DEBUG_SHELL, BASH_SHELL, SWITCH_PROMPT, SWITCH_LOGIN, PWD_PROMPT], 5)
         while i>=0:
             if i==0:
-                logging.info('This is pexpect.TIMEOUT and hence is active return FALSE')
+                logging.info('This is pexpect.TIMEOUT and hence is standby return true')
                 switch.close()
                 return True
             if i==1:
@@ -420,14 +420,18 @@ class Switch(object):
                 switch.close()
                 return True
             if i==2:
+                logging.info('This is wrong password and hence is standby return true')
+                switch.close()
+                return True
+            if i==3:
                 logging.info('Its standby console and hence is standby return true')
                 switch.close()
                 return True
-            if i>2 and i<5:
+            if i>3 and i<6:
                 logging.info('Its in bash/debug shell so exit and try again')
                 switch.sendline('exit')
-            if i==5:
-                switch.send('\003')
+            if i==6:
+                switch.sendline('terminal length 0')
                 switch.expect(SWITCH_PROMPT)
                 switch.sendline('switchback')
                 switch.expect(SWITCH_PROMPT)
@@ -441,95 +445,88 @@ class Switch(object):
                 else:
                     switch.close()
                     return True
-            if i==6:
-                switch.sendline('admin')
             if i==7:
+                switch.sendline('admin')
+            if i==8:
                 switch.sendline(self.switch_pwd)
-            i = switch.expect([pexpect.TIMEOUT, pexpect.EOF, SWITCH_STANDBY, DEBUG_SHELL, BASH_SHELL, \
-                    SWITCH_PROMPT, SWITCH_LOGIN, 'assword:'], 5)
+            i = switch.expect([pexpect.TIMEOUT, pexpect.EOF, r'Login incorrect', SWITCH_STANDBY, \
+                    DEBUG_SHELL, BASH_SHELL, SWITCH_PROMPT, SWITCH_LOGIN, PWD_PROMPT], 5)
         
         switch.close()
         return True
-    
-    def check_any_logged_user(self, log):
-        """
-        Check if the user is logged into the system. For this switch ip needs
-        to be set else it will not work.
-            switch# bash
-            (none)(shell)> who
-            admin    ttyS0        Oct 11 03:58
-            admin    pts/0        Oct 11 04:01 (10.21.31.111)
-            (none)(shell)>
-        This above example shows there are 2 users logged into as admin.
-        """
-        console = pexpect.spawn('ssh admin@%s' % (self.console_ip))
-        console.logfile = log
-        time.sleep(2)
-        i = console.expect([pexpect.TIMEOUT, pexpect.EOF, SWITCH_LOGIN, 'Password:', SWITCH_PROMPT])
-        if i == 0:
-            return False 
-        if i == 1:
-            return False 
-        if i == 2:
-            console.sendline('admin')
-            console.expect('Password:')
-            console.sendline(self.switch_pwd)
-        if i == 3:
-            console.sendline(self.switch_pwd)
-        if i == 4:
-            pass
 
+    def get_switch_details_from_mgmt(self, using):
+        """
+        This method will get the inventory details using the active sup mgmt 
+        ip using telnet or ssh provided by client (Default is telnet)
+        [IMP]Telnet handle is closed in the function
+
+        Details collected are store in dictionary as:
+            ret_output['inv'] = show inventory | xml
+            ret_output['uptime'] = show system uptime | xml
+            ret_output['idletime'] = show accounting log | grep "configure" | last 1
+            ret_output['clock'] = show clock | last 1
+        """
+        ret_output = {}
+        #Get the console mgmt handle
+        console = self.connect_mgmt_ip("ssh")
+        console.sendline('terminal length 0')
         console.expect(SWITCH_PROMPT)
-        console.sendline('bash')
-        console.expect(BASH_SHELL)
-        console.sendline('who')
-        console.expect(BASH_SHELL)
-        details = console.before
-        if details.count('admin') > 1:
-            console.close()
-            return True
-        else: 
-            console.close()
-            return False
+        console.sendline('show inventory | xml')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['inv'] = console.before
+        console.sendline('show system uptime | xml')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['uptime'] = console.before
+        console.sendline('show accounting log | grep "configure" | last 1')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['idletime'] = console.before
+        console.sendline('terminal length 15')
+        console.expect(SWITCH_PROMPT)
+        console.sendline('show clock | last 1')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['clock'] = console.before
+        console.close()
+        return ret_output 
 
-    def get_switch_module_details(self, log):
+    def get_switch_details_from_console(self):
         """
-        This function will retrieve the "show module | xml" details into a
-        xml format which inturn will be returned to the caller
-        """
-        logging.info("Logging into switch %s to collect details", self.switch_name)
-        xml = {}
-        xml['mgmt_issue'] = False
-        xml['telnet_issue'] = False
-        xml['output'] = ""
-        xml['uptime'] = ""
+        This method will get the inventory details using the active sup console
+        ip and port.
+        [IMP]Telnet handle is closed in the function
 
-        output = Switch.get_switch_module_details_from_mgmt(self.mgmt_ip, self.switch_pwd, log)
-        if output == "":
-            xml['mgmt_issue'] = True 
-            #Always Clear the Consoles while working on the console
-            self.clear_console(log)
-            self.clear_screen(log)
-            #Check which port is active one
-            if str(self.stnd_port) != '':
-                ports = [self.act_port, self.stnd_port]
-                checkpo0 = self.check_standby(ports[0],log)
-                checkpo1 = self.check_standby(ports[1],log)
-                if not(checkpo0) and not(checkpo1):
-                    st_port = ports[1]
-                    port = ports[0]
-                if checkpo0:
-                    st_port = ports[0]
-                    port = ports[1]
-                if checkpo1:
-                    st_port = ports[1]
-                    port = ports[0]
-                self.act_port = port
-                self.stnd_port = st_port
-            output = Switch.get_switch_module_details_from_console(self.console_ip, \
-                                self.act_port, self.switch_pwd, log)
-            if output == "":
-                xml['telnet_issue'] = True 
-        if output:
-            xml['output'],xml['uptime'] = output.values()
-        return xml
+        Details collected are store in dictionary as:
+            ret_output['inv'] = show inventory | xml
+            ret_output['uptime'] = show system uptime | xml
+            ret_output['idletime'] = show accounting log | grep "configure" | last 1
+            ret_output['clock'] = show clock | last 1
+        """
+        ret_output = {}
+        #Get the console port
+        console = self.telnet_console_port()
+        console.sendline('terminal length 0')
+        console.expect(SWITCH_PROMPT)
+        console.sendline('show inventory | xml')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['inv'] = console.before
+        console.sendline('show system uptime | xml')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['uptime'] = console.before
+        console.sendline('show accounting log | grep "configure" | last 1')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['idletime'] = console.before
+        console.sendline('terminal length 15')
+        console.expect(SWITCH_PROMPT)
+        console.sendline('show clock | last 1')
+        console.expect(SWITCH_PROMPT)
+        if any(i in console.before for i in INVALID_CLI): raise InvalidCliError('show cmd failure') 
+        ret_output['clock'] = console.before
+        console.close()
+        return ret_output

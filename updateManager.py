@@ -1,9 +1,7 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 
-from subprocess import check_output
-
-from ilab import *
 from ilab.Database import *
+from subprocess import check_output
 
 if __name__ == '__main__':
     for sw in Switches.select().where(Switches.manager==''):

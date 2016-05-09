@@ -1,0 +1,34 @@
+<html>
+<body>
+<div style="font-family: Calibri; font-size:12pt">
+Hello {{user}},</br>
+</br>
+Thank you for updating iLab with your switch details.</br>
+We are now running database consistency checks to ensure every switch detail is CORRECT and every switch is reachable via iLab.</br>
+</br>
+We ran into an issue and need your help to rectify the iLab database entry in next 48 hours.</br>
+</br>
+<b><mark>PROBLEM ::</mark></b></br>
+</br>
+Switch console/mgmt details are incorrect in iLab for the switch names - {{switch_names}}</br>
+</br>
+<b><mark>SOLUTION ::</mark></b></br>
+</br>
+Steps to fix the problem:
+<ul>
+<li>Open http://ilab.cisco.com/</li>
+<li>Fill in the switch_name in the search field</li>
+<li>Check the box and click on 'Edit'</li>
+<li>Update the console/mgmt details correctly. Also the mgmt_ip needs to be the default vdc mgmt_ip. If your switch is behind a private network and needs to be accessed through a server then please add the right details of the server in Proxy Server IP field</br>
+Eg:
+<ul>
+<li>10.10.10.10:admin:password</li>
+<li>johnxy:admin:password</li>
+</ul>
+</li>
+</ul>
+For any queries please contact - ilab@cisco.com
+</br>
+</div>
+</body>
+</html>

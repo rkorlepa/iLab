@@ -1,4 +1,4 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 
 #-----------------------------------------------------------------------------
 #  Copyright (C) 2016  The iLab Development Team
@@ -61,6 +61,10 @@ class Switch_Status(BaseModel):
     switch_name = CharField()
     telnet_issue = BooleanField(null=True)
     mgmt_issue = BooleanField(null=True)
-    idle_time = DateTimeField(null=True)
+    loader_prompt = BooleanField(null=True)
+    password_issue = BooleanField(null=True)
+    invalidcli_issue = BooleanField(null=True)
+    sys_uptime = DateTimeField(null=True)
+    idle_time = CharField(null=True)
 
 db.create_tables([Switches,Switch_Details,Switch_Status], safe=True)

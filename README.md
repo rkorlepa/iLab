@@ -11,6 +11,7 @@ Frontend code is developed using javascript, php and mysql. Backend code is comp
 3. [MySQL cluster] (http://galeracluster.com/downloads/)
 4. [Python 2.7.11] (https://my.bluehost.com/cgi/help/python-install)
 5. [HAProxy/Pen/Galera Load Balancer] (http://galeracluster.com/documentation-webpages/loadbalancing.html)
+6. [Editor Datatables] (https://editor.datatables.net)
 
 ##### Extra Packages for Python
 1. BeautifulSoup4

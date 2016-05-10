@@ -1,7 +1,8 @@
 # iLab
 
-This project has the checkin for frontend and backend code for analysis.
-Frontend code is developed using javascript, php and mysql. Backend code is completely based of python and mysql.
+This project has the details for frontend to add switches/testbed to DB and backend code for analysis.
+Frontend code is developed using javascript, php and mysql.
+Backend code is completely based of python and mysql.
 
 #### For installing or bringing up ilab in production
 
@@ -22,3 +23,4 @@ Frontend code is developed using javascript, php and mysql. Backend code is comp
 7. pip
 8. PyMySQL
 9. setuptools
+

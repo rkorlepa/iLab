@@ -26,4 +26,4 @@ Backend code is completely based of python and mysql.
 
 #### Functionality
 
-iLab currently supports to add/update/delete switches using GUI. Once added there are backend scrits which monitor the switches on daily basis to collect the inventory details, system uptime and idle time. If any discrepency in logging into the switch using the mgmt_ip or the console ports then a recurring mail is sent to the user to correct the details of the switch.
+iLab currently supports to add/update/delete switches using GUI. Once added there are backend scrits which monitor the switches on daily basis to collect the inventory details, system uptime and idle time. If any discrepency in connecting to the switch throught mgmt_ip or the console ports then a recurring mail is sent to the user to correct the details of the switch.

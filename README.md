@@ -8,6 +8,6 @@ Frontend code is developed using javascript, php and mysql. Backend code is comp
 ##### Requirements
 1. Apache
 2. PHP
-3. [https://blog.laimbock.com/tag/cluster/]MySQL cluster
+3. [https://blog.laimbock.com/tag/cluster/] (MySQL cluster)
 4. Python 2.7.11
 5. HAProxy/Pen/Galera Load Balancer

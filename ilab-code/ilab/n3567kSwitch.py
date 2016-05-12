@@ -375,15 +375,17 @@ class n3567kSwitch(Switch):
                                 self.act_port, self.stnd_console_ip, self.stnd_port)
             try:
                 output = self.get_switch_details_from_console()
-            except (TimeoutError, EofError):
+            except BootingError:
                 try:
                     console = self.load_image_using_telnet()
-                    Switch.setip(console, self.mgmt_ip)
                     console.close()
                     output = self.get_switch_details_from_mgmt("ssh")
                 except (TimeoutError, EofError):
                     xml['telnet_issue'] = True
                     raise TimeoutError('Could not telnet nor ssh')
+            except (TimeoutError, EofError):
+                xml['telnet_issue'] = True
+                raise TimeoutError('Could not telnet nor ssh')
         xml['clock'],xml['idletime'],xml['output'],xml['uptime'] = \
                 collections.OrderedDict(sorted(output.items())).values()
         return xml

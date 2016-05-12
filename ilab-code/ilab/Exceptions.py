@@ -34,3 +34,6 @@ class LoaderError(BaseError):
 
 class InvalidCliError(BaseError):
     pass
+
+class BootingError(BaseError):
+    pass

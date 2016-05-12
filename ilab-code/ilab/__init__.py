@@ -5,7 +5,7 @@ import logging
 from jinja2 import Environment, PackageLoader
 
 '''Used for db connection and remote host switch files'''
-DB_DATABASE = 'ilab_test'
+DB_DATABASE = 'ilab'
 DB_USER = 'ilab'
 DB_PWD = 'nbv_12345'
 DB_HOST = '172.23.152.145'

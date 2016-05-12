@@ -10,7 +10,7 @@ We ran into an issue and need your help to rectify the iLab database entry in ne
 </br>
 <b><mark>PROBLEM ::</mark></b></br>
 </br>
-Switch console/mgmt details are incorrect in iLab for the switch names - {{switch_names}}</br>
+Switch password entry is incorrect in iLab for the switch names - {{switch_names}}</br>
 </br>
 <b><mark>SOLUTION ::</mark></b></br>
 </br>
@@ -19,13 +19,7 @@ Steps to fix the problem:
 <li>Open http://ilab.cisco.com/</li>
 <li>Fill in the 'switch_name' in the search field on top</li>
 <li>Select the entry and click on 'Edit'</li>
-<li>Update the console/mgmt details correctly. Also the mgmt_ip needs to be the default vdc mgmt_ip. If your switch is behind a private network and needs to be accessed through a server then please add the right details of the server in Proxy Server IP field</br>
-Eg:
-<ul>
-<li>10.10.10.10:admin:password</li>
-<li>johnxy:admin:password</li>
-</ul>
-</li>
+<li>Update the 'Switch Pwd' entry field in the form and click 'Update'</li>
 </ul>
 For any queries please contact - ilab@cisco.com
 </br>

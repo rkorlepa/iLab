@@ -149,25 +149,27 @@ class Switch(object):
         console.logfile = self.log
         console.sendline('')
         i = console.expect([pexpect.TIMEOUT, pexpect.EOF, PWD_PROMPT, CONSOLE_PROMPT, EN_CONSOLE_PROMPT], 5)
-        if i == 0:
-            raise TimeoutError('Clear Console Timeout error')
-        if i == 1:
-            raise EofError('Clear Console EOF error')
-        if i == 2:
-            console.sendline(self.console_pwd)
-            console.expect(CONSOLE_PROMPT)
-            console.sendline('en')
-            console.expect('Password:')
-            console.sendline(self.console_pwd)
-        if i == 3:
-            console.sendline('en')
-            console.expect('Password:')
-            console.sendline(self.console_pwd)
-        if i == 4:
-            pass
+        while i >= 0:
+            if i == 0:
+                raise TimeoutError('Clear Console Timeout error')
+            if i == 1:
+                raise EofError('Clear Console EOF error')
+            if i == 2:
+                console.sendline(self.console_pwd)
+            if i == 3:
+                console.send('\003')
+                j = console.expect([PWD_PROMPT, CONSOLE_PROMPT, EN_CONSOLE_PROMPT], 15)
+                if j == 0:
+                    console.sendline(self.console_pwd)
+                if j == 1:
+                    console.sendline('en')
+                if j == 2:
+                    break
+            if i == 4:
+                break 
+            i = console.expect([pexpect.TIMEOUT, pexpect.EOF, PWD_PROMPT, CONSOLE_PROMPT, EN_CONSOLE_PROMPT], 5)
         
         po = int(port)%100
-        console.expect(EN_CONSOLE_PROMPT)
         console.sendline('clear line %d'%(po))
         console.sendline('\r')
         console.expect('confirm')
@@ -323,36 +325,44 @@ class Switch(object):
         time.sleep(2)
         console.sendline('')
         i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
-                LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
-                'ogin:', PWD_PROMPT, SWITCH_PROMPT], 5)
+            'Abort Auto Provisioning and continue.*', 'enable admin vdc.*', \
+            'enforce secure password.*', 'the basic configuration dialog.*', \
+            'the password for.*', LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
+            SWITCH_LOGIN, PWD_PROMPT, SWITCH_PROMPT], 5)
         while i >= 0:
             if i == 0:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Timed out, Not able to access mgmt')
-                raise TimeoutError('get_switch_module_details_from_console, Timed out, Not able to access mgmt')
+                logging.info('get_switch_module_details_from_console, Timed out, Not able to access console')
+                raise TimeoutError('get_switch_module_details_from_console, Timed out, Not able to access console')
             if i == 1:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Eof error, Not able to access mgmt')
-                raise EofError('get_switch_module_details_from_console, Eof error, Not able to access mgmt')
+                logging.info('get_switch_module_details_from_console, Eof error, Not able to access console')
+                raise EofError('get_switch_module_details_from_console, Eof error, Not able to access console')
             if i == 2:
                 console.close()
                 logging.info('get_switch_module_details_from_console, Password error')
                 raise PasswordError('get_switch_module_details_from_console, Password error')
-            if i == 3 or i == 4:
+            if i>2 and i<8:
+                console.close()
+                logging.info("get_switch_module_details_from_console, switch is booting so load and check")
+                raise BootingError("get_switch_module_details_from_console, switch is booting so load and check")
+            if i == 8 or i == 9:
                 console.close()
                 logging.info('get_switch_module_details_from_console, Switch in loader/boot prompt')
                 raise LoaderError('get_switch_module_details_from_console, Switch in loader/boot prompt')
-            if i == 5 or i == 6:
+            if i == 10 or i == 11:
                 console.sendline('exit')
-            if i == 7:
+            if i == 12:
                 console.sendline('admin')
-            if i == 8:
+            if i == 13:
                 console.sendline(self.switch_pwd)
-            if i == 9:
+            if i == 14:
                 break
             i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
-                    LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
-                    'ogin:', PWD_PROMPT, SWITCH_PROMPT], 5)
+                'Abort Auto Provisioning and continue.*', 'enable admin vdc.*', \
+                'enforce secure password.*', 'the basic configuration dialog.*', \
+                'the password for.*', LOADER_PROMPT, BOOT_PROMPT, BASH_SHELL, DEBUG_SHELL, \
+                SWITCH_LOGIN, PWD_PROMPT, SWITCH_PROMPT], 5)
         
         return console
 
@@ -407,7 +417,9 @@ class Switch(object):
         logging.info("Checking if port=%s is standby for ip=%s", port, console_ip)
         switch = pexpect.spawn('telnet %s %s'%(console_ip,port))
         switch.logfile = self.log
+        switch.send('\003')
         switch.sendline('')
+        switch.send('\003')
         i = switch.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, SWITCH_STANDBY, \
                 DEBUG_SHELL, BASH_SHELL, SWITCH_PROMPT, SWITCH_LOGIN, PWD_PROMPT], 5)
         while i>=0:

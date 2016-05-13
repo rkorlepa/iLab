@@ -22,7 +22,9 @@ Backend code is completely based of python and mysql.
 6. pexpect
 7. pip
 8. PyMySQL
-9. setuptools
+9. prompt_toolkit
+11. tablib
+10. setuptools
 
 #### Functionality
 

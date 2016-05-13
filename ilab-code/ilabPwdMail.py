@@ -8,12 +8,14 @@
 #  in the file COPYING, distributed as part of this software.
 #-----------------------------------------------------------------------------
 
+from collections import defaultdict
+
 from ilab import *
 from ilab.Database import *
 from ilab.ilabmail import *
-from collections import defaultdict
+from ilab.Utils import *
 
-if __name__ == '__main__':
+def send_pwd_issue_mail():
     pwdIssue = defaultdict(list)
     for sw_st in Switch_Status.select(Switch_Status.id,Switch_Status.switch_name).where(Switch_Status.password_issue==1):
         user = Switches.get(Switches.id == sw_st.id).user
@@ -31,3 +33,12 @@ if __name__ == '__main__':
         mailer.send()
         mailer.reset()
         print "Mail sent to %s for duts %s" % (user, duts)
+
+if __name__ == '__main__':
+    username = prompt(u'Username: ')
+    pwd = prompt(u'Password: ')
+    
+    if not Utils.check_user(username, pwd):
+        print "Username/Password Entered is wrong"
+    else:
+        send_pwd_issue_mail():

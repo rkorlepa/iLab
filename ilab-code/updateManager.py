@@ -1,5 +1,13 @@
 #!/ws/rkorlepa-sjc/python/bin/python
 
+#-----------------------------------------------------------------------------
+#  Copyright (C) 2016  The iLab Development Team
+#
+#  version = 1.0
+#  Distributed under the terms of the Cisco Systems Inc. The full license is
+#  in the file COPYING, distributed as part of this software.
+#-----------------------------------------------------------------------------
+
 from ilab.Database import *
 from subprocess import check_output
 

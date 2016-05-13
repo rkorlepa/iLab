@@ -15,6 +15,7 @@ import re
 import logging
 from subprocess import call
 from abc import ABCMeta, abstractmethod
+from passlib.hash import sha256_crypt
 
 from ilab import *
 from ilab.Database import *
@@ -63,3 +64,11 @@ class Utils(object):
         switch.standby_port = stnd 
         switch.save()
         return
+
+    @staticmethod
+    def check_user(user, pwd):
+        try:
+            user_pwd = Login.get(Login.username==user).password
+            return sha256_crypt.verify(pwd, user_pwd)
+        except:
+            return False

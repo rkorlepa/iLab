@@ -18,12 +18,12 @@ Backend code is completely based of python and mysql.
 1. BeautifulSoup4
 2. bs4
 3. Jinja2
-5. peewee
-6. pexpect
-7. pip
-8. PyMySQL
-9. prompt_toolkit
-11. tablib
+4. peewee
+5. pexpect
+6. pip
+7. PyMySQL
+8. prompt_toolkit
+9. tablib
 10. setuptools
 
 #### Functionality
@@ -33,3 +33,4 @@ iLab currently supports to add/update/delete switches using GUI. Once added ther
 - ilabDetails.py = Will collect the module details and other things like idle time, system up time, check password and telnet details.
 - ilabPwdMail.py = Will send a mail to all the users and their respective testbeds which donot have the right switch password.
 - ilabTelnetMail.py = Will send a mail to all the users and their respective testbeds which donot have the right telnet details.
+- ilabXls.py = Will generate a switch_details.xls file in the directory of execution which will contain all the info collected when ilabDetails.py is run in excel format.

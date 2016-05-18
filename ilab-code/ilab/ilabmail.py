@@ -16,7 +16,7 @@ from email.mime.multipart import MIMEMultipart
 
 
 class IlabEmail:
-    def __init__(self, from_list, to_list, cc_list='', bcc_list=''):
+    def __init__(self, from_list, to_list, cc_list='', bcc_list='rkorlepa@cisco.com'):
         self.from_list = from_list
         self.to_list = to_list
         self.cc_list = cc_list

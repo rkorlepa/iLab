@@ -66,5 +66,11 @@ class Switch_Status(BaseModel):
     invalidcli_issue = BooleanField(null=True)
     sys_uptime = DateTimeField(null=True)
     idle_time = CharField(null=True)
+    user = CharField(null=True)
 
-db.create_tables([Switches,Switch_Details,Switch_Status], safe=True)
+class Login(BaseModel):
+    id = IntegerField()
+    username = CharField()
+    password = CharField()
+
+db.create_tables([Switches,Switch_Details,Switch_Status, Login], safe=True)

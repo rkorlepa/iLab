@@ -19,7 +19,7 @@ def create_xls_file():
     xls_data = []
     headers = ('Id', 'Switch Name', 'Telnet Issue', 'Mgmt Issue','Loader \
             Prompt', 'Pwd Issue', 'Invalid Cli', 'Sys Uptime', 'Idle Time', \
-            'Supervisors','Linecards','User', 'Manager')
+            'Supervisors','Linecards','User', 'Manager','User Type')
 
     for switch in Switch_Status.select():
         user = str(Switches.get(Switches.id==switch.id).user)
@@ -46,7 +46,8 @@ def create_xls_file():
                      ','.join(temp_det_sup), \
                      ','.join(temp_det_line), \
                      user, \
-                     manager)
+                     manager,
+                     str(switch.user))
         xls_data.append(temp_data)
 
     xls_data = tablib.Dataset(*xls_data, headers=headers)

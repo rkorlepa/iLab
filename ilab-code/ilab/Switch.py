@@ -288,20 +288,20 @@ class Switch(object):
         while i >= 0:
             if i == 0:
                 console.close()
-                logging.info('get_switch_module_details_from_mgmt, Timed out, Not able to access mgmt')
-                raise TimeoutError('get_switch_module_details_from_mgmt, Timed out, Not able to access mgmt')
+                logging.info('connect_mgmt_ip, Timed out, Not able to access mgmt')
+                raise TimeoutError('connect_mgmt_ip, Timed out, Not able to access mgmt')
             if i == 1:
                 console.close()
-                logging.info('get_switch_module_details_from_mgmt, Eof error, Not able to access mgmt')
-                raise EofError('get_switch_module_details_from_mgmt, Eof error, Not able to access mgmt')
+                logging.info('connect_mgmt_ip, Eof error, Not able to access mgmt')
+                raise EofError('connect_mgmt_ip, Eof error, Not able to access mgmt')
             if i == 2 or i == 3:
                 console.close()
-                logging.info('get_switch_module_details_from_mgmt, Password error')
-                raise PasswordError('get_switch_module_details_from_mgmt, Password error')
+                logging.info('connect_mgmt_ip, Password error')
+                raise PasswordError('connect_mgmt_ip, Password error')
             if i == 2 or i == 3:
                 console.close()
-                logging.info('get_switch_module_details_from_mgmt, Switch in loader/boot prompt')
-                raise LoaderError('get_switch_module_details_from_mgmt, Switch in loader/boot prompt')
+                logging.info('connect_mgmt_ip, Switch in loader/boot prompt')
+                raise LoaderError('connect_mgmt_ip, Switch in loader/boot prompt')
             if i == 6:
                 console.sendline(self.switch_pwd)
             if i == 7:
@@ -332,24 +332,24 @@ class Switch(object):
         while i >= 0:
             if i == 0:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Timed out, Not able to access console')
-                raise TimeoutError('get_switch_module_details_from_console, Timed out, Not able to access console')
+                logging.info('telnet_console_port, Timed out, Not able to access console')
+                raise TimeoutError('telnet_console_port, Timed out, Not able to access console')
             if i == 1:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Eof error, Not able to access console')
-                raise EofError('get_switch_module_details_from_console, Eof error, Not able to access console')
+                logging.info('telnet_console_port, Eof error, Not able to access console')
+                raise EofError('telnet_console_port, Eof error, Not able to access console')
             if i == 2:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Password error')
-                raise PasswordError('get_switch_module_details_from_console, Password error')
+                logging.info('telnet_console_port, Password error')
+                raise PasswordError('telnet_console_port, Password error')
             if i>2 and i<8:
                 console.close()
-                logging.info("get_switch_module_details_from_console, switch is booting so load and check")
-                raise BootingError("get_switch_module_details_from_console, switch is booting so load and check")
+                logging.info("telnet_console_port, switch is booting so load and check")
+                raise BootingError("telnet_console_port, switch is booting so load and check")
             if i == 8 or i == 9:
                 console.close()
-                logging.info('get_switch_module_details_from_console, Switch in loader/boot prompt')
-                raise LoaderError('get_switch_module_details_from_console, Switch in loader/boot prompt')
+                logging.info('telnet_console_port, Switch in loader/boot prompt')
+                raise LoaderError('telnet_console_port, Switch in loader/boot prompt')
             if i == 10 or i == 11:
                 console.sendline('exit')
             if i == 12:
@@ -481,7 +481,7 @@ class Switch(object):
         """
         ret_output = {}
         #Get the console mgmt handle
-        console = self.connect_mgmt_ip("ssh")
+        console = self.connect_mgmt_ip(using)
         console.sendline('terminal length 0')
         console.expect(SWITCH_PROMPT)
         console.sendline('show inventory | xml')

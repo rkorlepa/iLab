@@ -8,129 +8,89 @@
 #  in the file COPYING, distributed as part of this software.
 #-----------------------------------------------------------------------------
 
+import os
 import re
 import logging
 from subprocess import call, check_output
-from bs4 import BeautifulSoup
-from datetime import datetime
+from prompt_toolkit import prompt
 
-from ilab import *
-from ilab.Exceptions import *
-from ilab.Database import *
-from ilab.Switch import Switch 
-from ilab.n3567kSwitch import n3567kSwitch 
-from ilab.n89kSwitch import n89kSwitch
+from libilab import *
+from libilab.Exceptions import *
+from libilab.Database import *
+from libilab.Utils import Utils
 
-def remove_first_last_lines(string):
-    ind1 = string.find('\n')
-    ind2 = string.rfind('\n')
-    return string[ind1+1:ind2]
-
-def switch_details(switchObj):
-    # Clear the data for previous entries of switch 
-    del_q = Switch_Details.delete().where(Switch_Details.switch_name==switchObj.switch_name).execute()
-    del_q = Switch_Status.delete().where(Switch_Status.switch_name==switchObj.switch_name).execute()
-    try:
-        xml = switchObj.get_switch_module_details()
-        inv = remove_first_last_lines(xml['output'])
-        uptime = remove_first_last_lines(xml['uptime'])
-        clock = remove_first_last_lines(xml['clock']).strip()
-        idletime = remove_first_last_lines(xml['idletime']).split(':type')[0]
-
-        #Get the system uptime from xml
-        uptime = uptime.replace("__readonly__", "readonly")
-        xml_soup = BeautifulSoup(uptime, "html.parser")
-        try:
-            up_dt = datetime.strptime(xml_soup.sys_st_time.text, '%a %b  %d %H:%M:%S %Y')
-        except:
-            up_dt = None
-        #Get idletime using clock of switch
-        try:
-            clock_dt = datetime.strptime(clock, '%H:%M:%S.%f %Z %a %b %d %Y')
-            temp_dt = datetime.strptime(idletime, '%a %b  %d %H:%M:%S %Y')
-            idle_dt = clock_dt - temp_dt
-            idle = '%s' % idle_dt
-        except:
-            idle = None 
-        ins_q = Switch_Status.create(id=switchObj.id, \
-                                     switch_name = switchObj.switch_name, \
-                                     telnet_issue = xml['telnet_issue'], \
-                                     mgmt_issue = xml['mgmt_issue'], \
-                                     sys_uptime = up_dt, \
-                                     idle_time = idle)
-
-        inv = inv.replace(" ","")
-        inv = inv.replace("__readonly__", "readonly")
-        xml_soup = BeautifulSoup(inv, "html.parser")
-
-        switchDetails = {}
-        regexp = re.compile(r'fabric|system|Chassis|chassis|power|Power')
-        switchDetails['switch_name'] = switchObj.switch_name
-        switchDetails['linecard'] = []
-        switchDetails['module_type'] = []
-        switchDetails['serial_num'] = []
-        for modules in xml_soup.findAll('row_inv'):
-            if regexp.search(str(modules.desc.text).lower()) is not None:
-                pass
-            else:
-                switchDetails['linecard'].append(str(modules.productid.text))
-                switchDetails['module_type'].append(str(modules.desc.text))
-                switchDetails['serial_num'].append(str(modules.serialnum.text))
-
-        for i in range(0,len(switchDetails['linecard'])):
-            ins_q = Switch_Details.create(id = switchObj.id, \
-                                          switch_name = switchObj.switch_name, \
-                                          linecard = switchDetails['linecard'][i], \
-                                          serial_num = switchDetails['serial_num'][i], \
-                                          module_type = switchDetails['module_type'][i])
-        print "Detail added for %s" % switchObj.switch_name
-    except PasswordError:
-        ins_q = Switch_Status.create(id=switchObj.id, \
-                                     switch_name = switchObj.switch_name, \
-                                     password_issue=True)
-    except InvalidCliError:
-        ins_q = Switch_Status.create(id=switchObj.id, \
-                                     switch_name = switchObj.switch_name, \
-                                     invalidcli_issue=True)
-    except LoaderError:
-        ins_q = Switch_Status.create(id=switchObj.id, \
-                                     switch_name = switchObj.switch_name, \
-                                     loader_prompt=True)
-    except TimeoutError:
-        ins_q = Switch_Status.create(id=switchObj.id, \
-                                     switch_name = switchObj.switch_name, \
-                                     telnet_issue=True, \
-                                     mgmt_issue=True)
+from Utils import swUtils
 
 if __name__ == "__main__":
 
-    print "Sit back and relax will take some time..."
-    print "(DO NOT CTRL+C)"
+    print " 1. Get the details of switches\n 2. Send mail to users about the telnet issue\n 3. Send mail to users about the passowd issue\n"
+    whattodo = prompt(u'Select the option you would like to perform [1,2,3]: ')
+    whattodo = int(whattodo)
 
-    n3567kList = ['n3k','n5k','n6k','n7k']
-    strfile = '%ssw_details.log' % LOG_DIR 
-    cli_cmd = 'rm %s' % (strfile)
-    call(cli_cmd, shell=True)
-    fout = None
-    fout = file(strfile, 'a')
-    logging.basicConfig(filename=strfile, format='%(asctime)s: %(levelname)s : %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    if whattodo != 1 and whattodo != 2 and whattodo != 3:
+        print "The option doesn't exist, Please try again"
+        sys.exit(1)
 
-    storeManagers = ['kpatel','skailas','stheodos','spitta','hjaganna','srduvvur','sayadlap']
-    proceed = True
-    for switch in Switches.select().where(Switches.manager!="").dicts():
-        proceed = True
-        users = str(switch['user']).lower().split(',')
-        for user in users:
-            rchain = check_output(["/usr/cisco/bin/rchain","-h","-M %s" % (user)]).split()
-            if not any(i in rchain for i in storeManagers):
-                proceed = False
-                break
-        if proceed:
-            if str(switch['switch_type']).lower() in n3567kList:
-                switchObj = n3567kSwitch(switch)
-            else:
-                switchObj = n89kSwitch(switch)
-            switchObj.log = fout
-            switch_details(switchObj)
+    if whattodo == 1:
+        print "Sit back and relax will take some time..."
+        print "(DO NOT CTRL+C)"
+        strfile = '%s/sw_details.log' % os.getcwd() 
+        cli_cmd = 'rm %s' % (strfile)
+        call(cli_cmd, shell=True)
+        fout = None
+        #fout = file(strfile, 'a')
+        logging.basicConfig(filename=strfile, format='%(asctime)s: %(levelname)s : %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
-    print "Collected all the Current Details"
+        print " 1. Fetch details based on user ids\n 2. Fetch details based on switch type\n"
+        temp_whattodo = prompt(u'Select the option you would like to perform [1,2]: ')
+        temp_whattodo = int(temp_whattodo)
+        
+        if whattodo != 1 and whattodo != 2 and whattodo != 3:
+            print "The option doesn't exist, Please try again"
+            sys.exit(1)
+        
+        if temp_whattodo == 1:
+            search_users = prompt(u'Get Details for DUTs under user(comma seperated users): ').split(',')
+            using = prompt(u'Get Details using ssh only [y|n]: ')
+            count = 0
+            for search_user in search_users:
+                all_users = check_output(['/usr/cisco/bin/rchain','-R','-h \
+                        %s'%str(search_user)]).split()
+                for user in all_users:
+                    for switch in Switches.select().where(Switches.user==user).dicts():
+                        count = count + 1
+                        switchId = str(switch['id'])
+                        swUtils.switch_details.delay(switchId, fout, str(using).lower())
+
+        if temp_whattodo == 2:
+            search_types = prompt(u'Get Details for DUTs of type [n9k, fretta, n7k, xbow, n6k, n5k]: ').split(',')
+            using = prompt(u'Get Details using ssh only [y|n]: ')
+            count = 0
+            for s_type in search_types:
+                for switch in Switches.select().where(Switches.switch_type==str(s_type)).dicts():
+                    count = count + 1
+                    switchId = str(switch['id'])
+                    swUtils.switch_details.delay(switchId, fout, str(using).lower())
+        print "Collected all the Current Details of %s switches" % count
+
+    if whattodo == 2:
+        username = prompt(u'Username: ')
+        pwd = prompt(u'Password: ')
+        swtype = prompt(u'Query for switch_type (n9k,fretta,n7k,xbow,n6k,n5k): ')
+        
+        if not Utils.check_user(username, pwd):
+            print "Username/Password Entered is wrong"
+        else:
+            print "\nSending Mail to users with telnet/mgmt issue\n"
+            swUtils.send_telnet_issue_mail(str(swtype))
+
+    if whattodo == 3:
+        username = prompt(u'Username: ')
+        pwd = prompt(u'Password: ')
+        swtype = prompt(u'Query for switch_type (n9k,fretta,n7k,xbow,n6k,n5k): ')
+
+        if not Utils.check_user(username, pwd):
+            print "Username/Password Entered is wrong"
+        else:
+            print "\nSending Mail to users with password issue\n"
+            swUtils.send_pwd_issue_mail(str(swtype))

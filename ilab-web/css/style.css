@@ -1,0 +1,16 @@
+#form_asset_by_input{
+    display: inline-block;
+    vertical-align: top;
+}
+
+#btn_usage{
+    display: inline-block;
+    vertical-align: top;
+}
+
+input, button{
+    margin:0;
+}
+
+
+

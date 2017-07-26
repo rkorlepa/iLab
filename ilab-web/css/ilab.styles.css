@@ -1,0 +1,119 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    -moz-osx-font-smoothing: grayscale;
+}
+ol li{
+      list-style-type: none;
+}
+.list-type3{
+    margin:50px 200px;
+    width:100px;
+}
+.list-type3 li, .list-type3 a{
+    float:left;
+    height:35px;
+    width:75px;
+    line-height:35px;
+    position:relative;
+    font-size:15px;
+    margin-bottom: 12px;
+    font-family: sans-serif;
+    transition: background-color 1.5s ease;
+}
+.list-type3 a{
+    padding:0 60px 0 12px;
+    background:#0089e0;
+    color:#fff;
+    text-decoration:none;
+    -moz-border-radius-bottomright:4px;
+    -webkit-border-bottom-right-radius:4px;
+    border-bottom-right-radius:4px;
+    -moz-border-radius-topright:4px;
+    -webkit-border-top-right-radius:4px;
+    border-top-right-radius:4px;
+}
+.list-type3 a:before{
+    content:"";
+    float:left;
+    position:absolute;
+    top:0;
+    left:-12px;
+    width:0;
+    height:0;
+    border-color:transparent #0089e0 transparent transparent;
+    border-style:solid;
+    border-width: 18px 12px 18px 0;
+}
+.list-type3 a:after{
+    content:"";
+    position:absolute;
+    top:15px;
+    left:0;
+    float:left;
+    width:6px;
+    height:6px;
+    -moz-border-radius:2px;
+    -webkit-border-radius:2px;
+    border-radius:2px;
+    background:#fff;
+    -moz-box-shadow:-1px -1px 2px #004977;
+    -webkit-box-shadow:-1px -1px 2px #004977;
+    box-shadow:-1px -1px 2px #004977;
+}
+.list-type3 a:hover{
+    background:#555;
+}
+.list-type3 a:hover:before{
+    border-color:transparent #0089e0 transparent transparent;
+}
+#navWrap {
+    background-color: rgb(52, 48, 46);
+}
+#navWrap {
+    background-image: url("../images/rgb.png"), 
+    url("../images/ilab.png"),
+    url("../images/cisco.png");
+    background-position: 0 0, 50%, 85%;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 130px;
+}
+ul#main-nav {
+    height: inherit;
+    padding: 1em 0;
+    list-style: outside none none;
+    width: 100%;
+}
+#main-nav {
+    display: inline-block;
+    max-width: 64em;
+}
+ul#main-nav li a, ul#main-nav li a:visited {
+    float: left;
+}
+ul#main-nav li a {
+    color: #fff;
+    padding: 0 0 0 50;
+}
+ul#main-nav li a, ul#main-nav li a:visited {
+    display: block;
+    margin: 0;
+}
+ul#main-nav li a {
+    font: 13px/1 Tahoma;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+ul#main-nav li a, ul#main-nav li a:visited {
+    width: auto;
+}
+a {
+    text-decoration: none;
+}
+html, body {
+    text-align: center;
+}

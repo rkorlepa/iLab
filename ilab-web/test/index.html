@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+    <head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		
+		<title>iLab</title>
+
+		<link rel="stylesheet" type="text/css" href="../css/datatables.min.css">
+		<link rel="stylesheet" type="text/css" href="../css/generator-base.css">
+		<link rel="stylesheet" type="text/css" href="../css/editor.dataTables.min.css">
+		<link rel="stylesheet" type="text/css" href="../css/buttons.dataTables.min.css">
+      <!--  <link rel="stylesheet" type="text/css" href="css/style.css" >-->
+        
+		<script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/s/dt/jq-2.2.0,dt-1.10.11,b-1.1.2,b-colvis-1.1.2,b-print-1.1.2,fc-3.2.1,fh-3.1.1,r-2.0.2,rr-1.1.1,sc-1.4.1,se-1.1.2/datatables.min.js"></script>
+        <script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.js"></script>
+		<script type="text/javascript" language="javascript" src="../js/jszip.min.js"></script>
+        <script type="text/javascript" language="javascript" src="../js/jszip.min.js"></script>
+		<script type="text/javascript" language="javascript" src="../js/sorttable.js"></script>
+		<script type="text/javascript" language="javascript" src="../js/vfs_fonts.js"></script>
+		<script type="text/javascript" language="javascript" src="../js/buttons.html5.min.js"></script>
+		<script type="text/javascript" language="javascript" src="../js/buttons.print.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="../js/dataTables.editor.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="../js/table.switches.js"></script>
+        <script type="text/javascript" language="javascript" src="../js/externalQueryscript.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        
+        
+       <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css" rel="stylesheet"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
+    -->
+
+        <script type="text/javascript">
+                function getURLandcode(){
+                      var url = document.URL;
+                      if(url.includes("?")){
+                        var code = url.split("?");
+                        code = code[1];
+                        code = code.split("=");
+                        code = code[1];
+                        fetchAuthCode(code);
+                      }
+                    }
+        </script>
+        
+        
+	</head>
+	<body onLoad="getURLandcode()">
+		<div class='header'>
+	        <img class='logo' src="../images/cisco.png" />
+	        <img class='title', src="../images/title.png" />
+    	</div>
+        
+        <script type="text/javascript">
+                function fetchAssetInventory(id){
+                    //debugger;
+                      $.ajax({
+                        type: "POST",
+                        url: "../php/fetchAssetInventoryQuery.php",
+                        data: {},
+                        success:function( response ) {
+                         //console.log( response );
+                            response_send = $.parseJSON(response);
+                            console.log(response_send);
+                            createTableAndPopulate(id, response_send);
+                        }
+                       });
+                    }
+        </script>
+        
+         <script type="text/javascript">
+                function fetchByLastAddedDate(id,inputDate){
+                      console.log(inputDate);
+                      var postData = {"Date" : inputDate}
+                    
+                      $.ajax({
+                        type: "POST",
+                        url: "../php/fetchByLastAddedDateQuery.php",
+                        data: postData,
+                        success:function( response ) {
+                            //console.log(response);
+                            response_send = $.parseJSON(response);
+                            createTableAndPopulate(id,response_send);
+                        }
+                       });
+                    }
+        </script>
+        
+        <script type="text/javascript">
+                function fetchUsageDetails(id){
+                    
+                      $.ajax({
+                        type: "POST",
+                        url: "../php/fetchUsageDetailsQuery.php",
+                        data: {},
+                        success:function( response ) {
+                            //console.log(response);
+                            response_send = $.parseJSON(response);
+                            console.log(response_send);
+                            createTableAndPopulate(id, response_send);
+                        }
+                       });
+                    }
+        </script>
+        
+        <script type="text/javascript">
+                function fetchAuthCode(rec_code){
+                      $.ajax({
+                        type: "POST",
+                        url: "https://cloudsso.cisco.com/as/token.oauth2",
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        data: {
+                            'grant_type': 'authorization_code',
+                            'code': rec_code,
+                            'redirect_uri':'http://ilab.cisco.com/test/index.html',
+                            'client_id':'ng6fwm5vkwm7cxgtqpegssqx',
+                            'client_secret':'YeNaZyXR6yw3F6RkfwBPCSr6'
+                        },
+                        success:function( response ) {
+                            console.log(response);
+                            fetchHelloData(response);
+                        }
+                       });
+                    }
+        </script>
+         
+        <script type="text/javascript">
+                function fetchHelloData(resp){
+                        console.log(resp['access_token']);
+                        var settings = {
+                        "async": true,
+                        "crossDomain": true,
+                        "url":"https://api.cisco.com/commerce/ORDER/v2/sync/checkOrderStatus",
+                        "method": "POST",
+                        "headers": {
+                        "authorization": "Bearer "+ resp['access_token'],
+                        "accept": "application/json",
+                        "content-type":"application/json",
+                        "x-mashery-message-id":"TESTID1234",
+                        "cache-control":"no-cache"
+                        },
+                        "processData": false,
+                        "data":"{\"GetPurchaseOrder\":{\"value\":{\"DataArea\":{\"PurchaseOrder\":[{\"PurchaseOrderHeader\":{\"ID\":{\"value\":\"201956955\"},\"DocumentReference\":[{\"ID\":{\"value\":\"\"}}],\"SalesOrderReference\":[{\"ID\":{\"value\":\"\"}}],\"Description\":[{\"value\":\"Yes\",\"typeCode\":\"details\"}]}}]},\"ApplicationArea\":{\"CreationDateTime\":\"datetime\",\"BODID\":{\"value\":\"BoDID-test\",\"schemeVersionID\":\"V1\"}}}}}"
+                        }
+                    $.ajax(settings).done(function (response) {
+                      console.log(response);
+                      });
+                    }
+        </script>
+        <script type="text/javascript">
+                function fetchHelloDataDup(resp){
+                        console.log(resp['access_token']);
+                      $.ajax({
+                        type: "POST",
+                        url:"https://api.cisco.com/commerce/ORDER/v2/sync/checkOrderStatus",
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + resp['access_token'],
+                            'accept':'application/json',
+                            "x-mashery-message-id": "TESTID1234",
+                            "cache-control": "no-cache"
+                        },
+                        async:true,
+                        crossDomain:true,
+                        data: {
+                            'ID':'201956955'
+                        },
+                        success:function( response ) {
+                            console.log("returned");
+                            console.log(response);
+                        }
+                       });
+                    }
+        </script>
+        
+        <div class="container">
+            <div class="row"  style="margin-top: 10px;">
+                <div class="col-md-2" style = "margin-top: 25px;" >
+                    <p>
+                        <button class="btn btn-primary" id = "btn_asset" onclick="fetchAssetInventory(this.id)" >Asset Inventory</button>
+                    </p>
+                </div>
+                <div class="col-md-2" style = "margin-top: 25px;"></div>
+                <div class="col-md-2">
+                     <label for="usr">Enter Date:</label>
+                     <div class="input-group" id = "form_asset_by_input">
+                        <input type="date" class="form-control" id = "date_input">
+                         <span class="input-group-btn">
+                            <button class="btn btn-primary" id = "btn_lastadded" onclick="fetchByLastAddedDate(this.id,document.getElementById('date_input').value)">Go!</button> 
+                         </span>
+                     </div>
+                </div>
+                <div class="col-md-2" style = "margin-top: 25px;"></div>
+                <div class="col-md-2" style = "margin-top: 25px;">
+                    <button class="btn btn-primary" id = "btn_hello"
+                    onclick="location.href =
+                    'https://cloudsso.cisco.com/as/authorization.oauth2?response_type=code&client_id=ng6fwm5vkwm7cxgtqpegssqx';" >CCW API</button>
+                </div>
+                <div class="col-md-2" style = "margin-top: 25px;">
+                    <button class="btn btn-primary" id = "btn_usage" onclick="fetchUsageDetails(this.id)" >Usage Report</button>
+                </div>
+            </div>
+            <div class = "row">
+                <div class = "container">
+                    <div id="table-section"></div>
+                </div>
+            </div>
+
+        </div>
+        
+	</body>
+</html>

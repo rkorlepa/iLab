@@ -16,8 +16,7 @@ from Mysql import Mysql
 
 class Database(object):
 
-    def __init__(self, host, username, pwd, database, table=''):
-        self._table = table
+    def __init__(self, host, username, pwd, database):
         self._conn = Mysql(host, username, pwd, database)
     
     def insert(self, table, *args, **kwargs):
@@ -29,14 +28,5 @@ class Database(object):
     def select(self, table, where=None, *args, **kwargs):
         return self._conn.select(table, where, *args, **kwargs)
 
-    def update_ports(self, sw_name, act, stand):
-        logging.info("Updating ActivePort=%s and StandbyPort=%s for switch=%s", act, stand, sw_name)
-        self._conn.update(self._table, 'switch_name=%s', sw_name, active_port=act, standby_port=stand)
-
-    def update_power_status(self, sw_name, power):
-        logging.info("Updating is_powered_on as %s for switch=%s", power, sw_name)
-        self._conn.update(self._table, 'switch_name=%s', sw_name, is_powered_on=power)
-
-    def update_images(self, sw_name, kick, sys):
-        logging.info("Updating kickstart=%s and system=%s images for switch=%s", kick, sys, sw_name)
-        self._conn.update(self._table, 'switch_name=%s', sw_name, kickstart=kick, system=sys)
+    def update(self, table, where=None, *args, **kwargs):
+        return self._conn.update(table, where, *args, **kwargs)

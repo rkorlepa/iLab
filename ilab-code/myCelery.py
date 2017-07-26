@@ -1,4 +1,4 @@
-#!/ws/rkorlepa-sjc/python/bin/python
+#!/usr/local/python/bin/python
 
 from __future__ import absolute_import, unicode_literals
 from celery import Celery

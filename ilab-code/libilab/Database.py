@@ -49,7 +49,6 @@ class Switches(MySQLModel):
     linecards = CharField(null=True)
     comments = CharField(null=True)
     director = CharField(null=True)
-    user_role = CharField(null=True)
 
 class Switch_Details(MySQLModel):
     id = IntegerField()
@@ -86,5 +85,5 @@ class sjc06_104(MySQLModel):
     location = CharField()
     user = CharField()
 
-db.connect()
-db.create_tables([Switches,Switch_Details,Switch_Status, Login, Linecards, sjc06_104], safe=True)
+#db.connect()
+#db.create_tables([Switches,Switch_Details,Switch_Status, Login, Linecards, sjc06_104], safe=True)

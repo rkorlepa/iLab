@@ -1,7 +1,9 @@
-#!/home/ilab/python2.7.11/bin/python
+#!/ws/rkorlepa-sjc/python/bin/python
 # coding=utf-8
 
-import MySQLdb, sys
+import pymysql, sys
+from retry import retry
+
 from collections import OrderedDict
 
 default_table_name = 'switches'
@@ -35,10 +37,15 @@ class Mysql(object):
 
     def __open(self):
         try:
-            cnx = MySQLdb.connect(self.__host, self.__user, self.__password, self.__database)
+            cnx = pymysql.connect(self.__host, \
+                                  self.__user, \
+                                  self.__password, \
+                                  self.__database, \
+                                  charset='utf8mb4', \
+                                  cursorclass = pymysql.cursors.DictCursor)
             self.__connection = cnx
-            self.__session    = cnx.cursor(MySQLdb.cursors.DictCursor)
-        except MySQLdb.Error as e:
+            self.__session    = cnx.cursor()
+        except pymysql.Error as e:
             print "Error %d: %s" % (e.args[0],e.args[1])
     ## End def __open
 
@@ -47,6 +54,7 @@ class Mysql(object):
         self.__connection.close()
     ## End def __close
 
+    @retry(delay=1,backoff=2,max_delay=4)
     def select(self, table, where=None, *args, **kwargs):
         if table == '':
             table = default_table_name
@@ -54,6 +62,7 @@ class Mysql(object):
         query = 'SELECT '
         keys = args
         values = tuple(kwargs.values())
+        print values
         l = len(keys) - 1
         if l ==0 and keys[l]=='*':
             query += keys[l]+ " "
@@ -69,7 +78,8 @@ class Mysql(object):
         if where:
             query += " WHERE %s" % where
         ## End if where
-    
+        print query
+
         self.__open()
         self.__session.execute(query, values)
         number_rows = self.__session.rowcount
@@ -84,6 +94,7 @@ class Mysql(object):
         return result
     ## End def select
 
+    @retry(delay=1, backoff=2, max_delay=4)
     def update(self, table, where=None, *args, **kwargs):
         if table == '':
             table = default_table_name
@@ -110,6 +121,7 @@ class Mysql(object):
         return update_rows
     ## End function update
 
+    @retry(delay=1, backoff=2, max_delay=4)
     def insert(self, table, *args, **kwargs):
         if table == '':
             table = default_table_name
@@ -130,6 +142,7 @@ class Mysql(object):
         return self.__session.lastrowid
     ## End def insert
 
+    @retry(delay=1, backoff=2, max_delay=4)
     def delete(self, table, where=None, *args):
         if table == '':
             table = default_table_name
@@ -149,22 +162,4 @@ class Mysql(object):
 
         return delete_rows
     ## End def delete
-
-    def select_advanced(self, sql, *args):
-        od = OrderedDict(args)
-        query  = sql
-        values = tuple(od.values())
-        self.__open()
-        self.__session.execute(query, values)
-        number_rows = self.__session.rowcount
-        number_columns = len(self.__session.description)
-
-        if number_rows >= 1 and number_columns > 1:
-            result = [item for item in self.__session.fetchall()]
-        else:
-            result = [item[0] for item in self.__session.fetchall()]
-
-        self.__close()
-        return result
-    ## End def select_advanced
 ## End class

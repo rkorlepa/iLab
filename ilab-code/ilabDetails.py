@@ -16,7 +16,7 @@ from prompt_toolkit import prompt
 
 from libilab import *
 from libilab.Exceptions import *
-from libilab.Database import *
+from libilab.test_database import *
 from libilab.Utils import Utils
 
 from Utils import swUtils
@@ -32,6 +32,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if whattodo == 1:
+        mysqldb = Database(DB_HOST, DB_USER, DB_PWD, DB_DATABASE)
         print "Sit back and relax will take some time..."
         print "(DO NOT CTRL+C)"
         strfile = '%s/sw_details.log' % os.getcwd() 
@@ -56,21 +57,19 @@ if __name__ == "__main__":
             for search_user in search_users:
                 all_users = check_output(['/usr/cisco/bin/rchain','-R','-h \
                         %s'%str(search_user)]).split()
-                for user in all_users:
-                    for switch in Switches.select().where(Switches.user==user).dicts():
+                for temp_user in all_users:
+                    for switch in mysqldb.select("switches", "user=%s", "id", user=str(temp_user)):
                         count = count + 1
-                        switchId = str(switch['id'])
-                        swUtils.switch_details.delay(switchId, fout, str(using).lower())
+                        swUtils.switch_details.delay(str(switch['id']), fout, str(using).lower())
 
         if temp_whattodo == 2:
             search_types = prompt(u'Get Details for DUTs of type [n9k, fretta, n7k, xbow, n6k, n5k]: ').split(',')
             using = prompt(u'Get Details using ssh only [y|n]: ')
             count = 0
             for s_type in search_types:
-                for switch in Switches.select().where(Switches.switch_type==str(s_type)).dicts():
+                for switch in mysqldb.select("switches", "switch_type=%s", "id", switch_type=s_type):
                     count = count + 1
-                    switchId = str(switch['id'])
-                    swUtils.switch_details.delay(switchId, fout, str(using).lower())
+                    swUtils.switch_details.delay(str(switch['id']), fout, str(using).lower())
         print "Collected all the Current Details of %s switches" % count
 
     if whattodo == 2:

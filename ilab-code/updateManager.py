@@ -12,7 +12,7 @@ from libilab.Database import *
 from subprocess import check_output
 
 if __name__ == '__main__':
-    for sw in Switches.select().where(Switches.manager==''):
+    for sw in Switches.select().where(Switches.manager.is_null()):
         insertList = []
         users = str(sw.user).lower().split(',')
         for user in users:
@@ -29,9 +29,9 @@ if __name__ == '__main__':
         for user in users:
             res = check_output(["/usr/cisco/bin/rchain","-h","-M %s" % (user)]).split()
             if res:
-                if 'maheshc' in res:
-                    if 'maheshc' not in insertList:
-                        insertList.append('maheshc')
+                if 'joyj' in res:
+                    if 'joyj' not in insertList:
+                        insertList.append('joyj')
                 if 'dkhurana' in res:
                     if 'dkhurana' not in insertList:
                         insertList.append('dkhurana')
@@ -41,20 +41,11 @@ if __name__ == '__main__':
                 if 'jredclif' in res:
                     if 'jredclif' not in insertList:
                         insertList.append('jredclif')
+                if 'vparames' in res:
+                    if 'vparames' not in insertList:
+                        insertList.append('vparames')
+                if 'ashokt' in res:
+                    if 'ashokt' not in insertList:
+                        insertList.append('ashokt')
         sw.director = ','.join(insertList)
-        sw.save()
-
-    for sw in Switches.select().where(Switches.director%'%maheshc%', Switches.user_role.is_null()):
-        insertList = []
-        users = str(sw.user).lower().split(',')
-        for user in users:
-            res = check_output(["/usr/cisco/bin/rchain","-h","-M %s" % (user)]).split()
-            if res:
-                if 'mbandi' in res or 'hahamed' in res:
-                    if 'QA' not in insertList:
-                        insertList.append('QA')
-                else:
-                    if 'DEV' not in insertList:
-                        insertList.append('DEV')
-        sw.user_role = ','.join(insertList)
         sw.save()

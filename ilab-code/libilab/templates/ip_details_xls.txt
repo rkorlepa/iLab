@@ -1,0 +1,13 @@
+<html>
+<body>
+<div style="font-family: Calibri; font-size:12pt">
+Hello {{user}},</br>
+</br>
+Thank you for using iLab retrieval of getting IP details</br>
+Attached are the details of all the DUTs given in xls file.</br>
+</br>
+For any queries please contact - ilab@cisco.com
+</br>
+</div>
+</body>
+</html>

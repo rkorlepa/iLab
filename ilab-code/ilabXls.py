@@ -18,73 +18,63 @@ from libilab.Database import *
 from libilab.Utils import * 
 from libilab.ilabmail import *
 
-def create_xls_file(swtype):
+def create_xls_file(swtypeli):
     xls_databook = tablib.Databook()
     xls_data_sheet1 = []
     xls_data_sheet2 = []
     headers_sheet1 = ('Id', 'Switch Name', 'Telnet Issue', 'Mgmt Issue','Loader \
             Prompt', 'Pwd Issue', 'DUT pwd', 'Invalid Cli', 'Sys Uptime', 'Idle Time', \
-            'Supervisors','Linecards','User', 'Manager', 'Cost', 'User Type')
-    headers_sheet2 = ('Id', 'Switch Name', 'Module Type', 'HW-PID', 'Serial \
-            Number', 'User', 'Manager')
+            'User', 'Manager')
+    headers_sheet2 = ('Id', 'Switch Name', 'Module Type', 'HW-PID', 'Serial  \
+            Num', 'User', 'Manager', 'Location')
 
-    for sw in Switches.select().where(Switches.switch_type==swtype):
-        for switch in Switch_Status.select().where(Switch_Status.id==sw.id):
-            dut_pwd = str(Switches.get(Switches.id==switch.id).switch_pwd)
-            user = str(Switches.get(Switches.id==switch.id).user)
-            user_role = str(Switches.get(Switches.id==switch.id).user_role)
-            manager = str(Switches.get(Switches.id==switch.id).manager)
-            temp_det_sup = []
-            temp_det_line = []
-            cost = 0
-            for details in Switch_Details.select().where(Switch_Details.id==switch.id):
-                if 'sup' in str(details.linecard).lower():
-                    m = re.match('\w+-([\w-]+)', str(details.linecard))
-                    add = m.group(1) + '(' + str(details.serial_num) + ')'
-                    temp_det_sup.append(add)
-                    temp_data_sheet2 = (str(switch.id), \
-                                        str(switch.switch_name), \
-                                        str(details.module_type), \
-                                        str(details.linecard), \
-                                        str(details.serial_num), \
-                                        user,
-                                        manager)
-                    xls_data_sheet2.append(temp_data_sheet2)
-                            
-                else:
-                    m = re.match('\w+-(\w{2})', str(details.linecard))
-                    if m:
-                        add = str(details.linecard) + '(' + str(details.serial_num) + ')'
-                        temp_det_line.append(add)
+    for swtype in swtypeli:
+        for sw in Switches.select().where(Switches.switch_type==swtype):
+            for switch in Switch_Status.select().where(Switch_Status.id==sw.id):
+                dut_pwd = str(Switches.get(Switches.id==switch.id).switch_pwd)
+                user = str(Switches.get(Switches.id==switch.id).user)
+                manager = str(Switches.get(Switches.id==switch.id).manager)
+                location = str(Switches.get(Switches.id==switch.id).location)
+                for details in Switch_Details.select().where(Switch_Details.id==switch.id):
+                    if 'sup' in str(details.linecard).lower():
+                        m = re.match('\w+-([\w-]+)', str(details.linecard))
+                        add = m.group(1) + '(' + str(details.serial_num) + ')'
                         temp_data_sheet2 = (str(switch.id), \
                                             str(switch.switch_name), \
                                             str(details.module_type), \
                                             str(details.linecard), \
                                             str(details.serial_num), \
-                                            user,
-                                            manager)
+                                            user, \
+                                            manager, \
+                                            location)
                         xls_data_sheet2.append(temp_data_sheet2)
-                try:
-                    cost = cost + Linecards.get(Linecards.linecard==str(details.linecard)).cost
-                except:
-                    pass
-            temp_data_sheet1 = (str(switch.id), \
-                                str(switch.switch_name), \
-                                'Yes' if switch.telnet_issue == 1 else '', \
-                                'Yes' if switch.mgmt_issue == 1 else '', \
-                                '' if switch.loader_prompt == None else 'Yes', \
-                                '' if switch.password_issue == None else 'Yes', \
-                                '' if switch.password_issue == None else dut_pwd, \
-                                '' if switch.invalidcli_issue == None else 'Yes', \
-                                str(switch.sys_uptime) if switch.sys_uptime != None else '', \
-                                str(switch.idle_time) if switch.idle_time != None else '', \
-                                ', '.join(temp_det_sup), \
-                                ', '.join(temp_det_line), \
-                                user, \
-                                manager,
-                                cost,
-                                user_role)
-            xls_data_sheet1.append(temp_data_sheet1)
+                                
+                    else:
+                        m = re.match('\w+-(\w{2})', str(details.linecard))
+                        if m:
+                            add = str(details.linecard) + '(' + str(details.serial_num) + ')'
+                            temp_data_sheet2 = (str(switch.id), \
+                                                str(switch.switch_name), \
+                                                str(details.module_type), \
+                                                str(details.linecard), \
+                                                str(details.serial_num), \
+                                                user, \
+                                                manager, \
+                                                location)
+                            xls_data_sheet2.append(temp_data_sheet2)
+                temp_data_sheet1 = (str(switch.id), \
+                                    str(switch.switch_name), \
+                                    'Yes' if switch.telnet_issue == 1 else '', \
+                                    'Yes' if switch.mgmt_issue == 1 else '', \
+                                    '' if switch.loader_prompt == None else 'Yes', \
+                                    '' if switch.password_issue == None else 'Yes', \
+                                    '' if switch.password_issue == None else dut_pwd, \
+                                    '' if switch.invalidcli_issue == None else 'Yes', \
+                                    str(switch.sys_uptime) if switch.sys_uptime != None else '', \
+                                    str(switch.idle_time) if switch.idle_time != None else '', \
+                                    user, \
+                                    manager)
+                xls_data_sheet1.append(temp_data_sheet1)
 
     xls_data_sheet1 = tablib.Dataset(*xls_data_sheet1, headers=headers_sheet1, \
             title='Complete Details')
@@ -115,4 +105,5 @@ if __name__ == '__main__':
         print "Username/Password Entered is wrong"
     else:
         swtype = prompt(u'Query for switch_type (n9k,fretta,n7k,xbow,n6k,n5k): ')
-        create_xls_file(swtype)
+        swtypeli = swtype.split(',')
+        create_xls_file(swtypeli)

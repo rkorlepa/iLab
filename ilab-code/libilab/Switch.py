@@ -22,19 +22,19 @@ from libilab.Utils import Utils
 class Switch(object):
     
     def __init__(self, switch):
-        self._id = str(switch.id)
-        self._switch_name = str(switch.switch_name)
-        self.console_ip = str(switch.console_ip)
-        self._mgmt_ip = str(switch.mgmt_ip) if switch.mgmt_ip else None
-        self.act_port = str(switch.active_port)
-        self.stnd_console_ip = str(switch.stnd_console_ip) if switch.stnd_console_ip else None
-        self.stnd_port = str(switch.standby_port) if switch.standby_port else None
-        self._switch_pwd = str(switch.switch_pwd)
-        self._console_user = str(switch.console_login).split(':')[0]
-        self._console_pwd = str(switch.console_login).split(':')[1]
+        self._id = str(switch['id'])
+        self._switch_name = str(switch['switch_name'])
+        self.console_ip = str(switch['console_ip'])
+        self._mgmt_ip = str(switch['mgmt_ip']) if switch['mgmt_ip'] else None
+        self.act_port = str(switch['active_port'])
+        self.stnd_console_ip = str(switch['stnd_console_ip']) if switch['stnd_console_ip'] else None
+        self.stnd_port = str(switch['standby_port']) if switch['standby_port'] else None
+        self._switch_pwd = str(switch['switch_pwd'])
+        self._console_user = str(switch['console_login']).split(':')[0]
+        self._console_pwd = str(switch['console_login']).split(':')[1]
         self.log = None 
-        self.kick = str(switch.kickstart) if switch.kickstart else None
-        self.sys = str(switch.system) if switch.system else None
+        self.kick = str(switch['kickstart']) if switch['kickstart'] else None
+        self.sys = str(switch['system']) if switch['system'] else None
 
     def __str__(self):
         return "Switch(switch_name=%s, console_ip=%s, mgmt_ip=%s, active_port=%s, standby_port=%s)" \
@@ -317,7 +317,7 @@ class Switch(object):
         console.logfile = self.log
         i = console.expect([pexpect.TIMEOUT, pexpect.EOF, LOGIN_INCORRECT, \
                 AUTH_ISSUE, LOADER_PROMPT, BOOT_PROMPT, SSH_NEWKEY, \
-                PWD_PROMPT], 5)
+                PWD_PROMPT, SWITCH_PROMPT], 5)
         while i >= 0:
             if i == 0:
                 console.close()

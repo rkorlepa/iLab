@@ -1,0 +1,15 @@
+<html>
+<body>
+<div style="font-family: Calibri; font-size:12pt">
+Hello {{user}},</br>
+</br>
+Thank you for using iLab retrieval of DUT details</br>
+Attached are the details of all the DUTs present in iLab Database.</br>
+</br>
+For further more information checkout the webpage at http://ilab.cisco.com</br>
+</br>
+For any queries please contact - ilab@cisco.com
+</br>
+</div>
+</body>
+</html>
